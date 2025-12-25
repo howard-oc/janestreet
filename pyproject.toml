@@ -1,0 +1,12 @@
+[project]
+name = "augmenttrade"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "duckdb>=1.4.3",
+    "google-genai>=1.56.0",
+    "lightstreamer-client>=0.1",
+    "requests",
+]
