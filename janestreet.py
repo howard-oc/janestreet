@@ -990,7 +990,7 @@ def parse_trading_recommendations(analysis_markdown: str) -> List[Dict[str, Any]
     Returns:
         List of order dictionaries ready for API submission
     """
-    orders = []
+    orders: List[Dict[str, Any]] = []
     
     if not analysis_markdown:
         return orders
@@ -1050,7 +1050,7 @@ def parse_trading_recommendations(analysis_markdown: str) -> List[Dict[str, Any]
         )
         lines = analysis_markdown.lower().split('\n')
         
-        current_order = {}
+        current_order: Dict[str, Any] = {}
         
         for line in lines:
             line = line.strip()
@@ -1064,7 +1064,6 @@ def parse_trading_recommendations(analysis_markdown: str) -> List[Dict[str, Any]
                     current_order['Direction'] = 'sell'
                 
                 # Extract price levels using regex
-                
                 # Look for entry price patterns like "at 50,700" or "@ 50700"
                 entry_match = re.search(r'(?:at|@|entry|price)[:\s]+([0-9,]+(?:\.[0-9]+)?)', line)
                 if entry_match:
@@ -1097,6 +1096,178 @@ def parse_trading_recommendations(analysis_markdown: str) -> List[Dict[str, Any]
         print(f"Warning: Failed to parse trading recommendations: {exc}", file=sys.stderr)
     
     return orders
+
+
+def parse_price_alert_suggestions(analysis_markdown: str) -> List[Dict[str, Any]]:
+    """Parse Gemini analysis to extract SavePriceAlert v2-compatible alert objects.
+
+    Looks for JSON arrays whose elements contain ``clientAccountId``,
+    ``marketId`` and ``fillRate`` – matching the format described in
+    ``docs/price_alerts/save_price_alert_v2.md``.
+    """
+    alerts: List[Dict[str, Any]] = []
+
+    if not analysis_markdown:
+        return alerts
+
+    import re
+    import json
+
+    try:
+        # Find all ```json ... ``` blocks in the analysis
+        blocks = re.finditer(
+            r'```json\s*(.*?)\s*```',
+            analysis_markdown,
+            re.DOTALL,
+        )
+
+        for match in blocks:
+            block = match.group(1).strip()
+            try:
+                parsed = json.loads(block)
+            except json.JSONDecodeError:
+                continue
+
+            # We only care about arrays of alert-like dicts
+            candidate_list: List[Dict[str, Any]] = []
+            if isinstance(parsed, list):
+                candidate_list = [x for x in parsed if isinstance(x, dict)]
+            elif isinstance(parsed, dict):
+                candidate_list = [parsed]
+
+            if not candidate_list:
+                continue
+
+            # Check whether these dicts look like SavePriceAlert payloads
+            alert_like = [
+                a
+                for a in candidate_list
+                if {
+                    "clientAccountId",
+                    "marketId",
+                    "fillRate",
+                }.issubset(a.keys())
+            ]
+
+            if not alert_like:
+                continue
+
+            print(
+                f"Found {len(alert_like)} price alert(s) in JSON block",
+                file=sys.stderr,
+            )
+            alerts.extend(alert_like)
+
+        # Deduplicate within this run by (clientAccountId, marketId, fillRate, direction, criterion)
+        if alerts:
+            seen = set()
+            deduped: List[Dict[str, Any]] = []
+            for a in alerts:
+                key = (
+                    a.get("clientAccountId"),
+                    a.get("marketId"),
+                    float(a.get("fillRate", 0.0)),
+                    a.get("direction"),
+                    a.get("criterion"),
+                )
+                if key in seen:
+                    continue
+                seen.add(key)
+                deduped.append(a)
+            alerts = deduped
+
+    except Exception as exc:
+        print(f"Warning: Failed to parse price alert suggestions: {exc}", file=sys.stderr)
+
+    return alerts
+
+
+def create_price_alerts(
+    client: CityIndexClient,
+    alerts: List[Dict[str, Any]],
+    *,
+    dry_run: bool = True,
+) -> List[Dict[str, Any]]:
+    """Create price alerts via the SavePriceAlert v2 endpoint.
+
+    The request/response structure is documented in
+    ``docs/price_alerts/save_price_alert_v2.md``. This helper only sends
+    well-formed alert objects and skips malformed entries.
+    """
+
+    results: List[Dict[str, Any]] = []
+
+    if not alerts:
+        return results
+
+    url = f"{API_BASE}/v2/priceAlert/save"
+    headers = {
+        "username": client.username,
+        "session": client.session,
+        "Content-Type": "application/json",
+    }
+
+    for idx, alert in enumerate(alerts):
+        result: Dict[str, Any] = {
+            "alert_index": idx,
+            "request": alert,
+            "status": "pending",
+        }
+
+        try:
+            # Basic validation
+            for field in ("clientAccountId", "marketId", "fillRate"):
+                if field not in alert:
+                    result["status"] = "failed"
+                    result["error"] = f"missing_field:{field}"
+                    results.append(result)
+                    break
+            else:
+                if dry_run:
+                    result["status"] = "dry_run_success"
+                    result["message"] = "Price alert validated but not sent (dry_run=True)"
+                    print(
+                        "DRY RUN: Would create price alert "
+                        f"clientAccountId={alert.get('clientAccountId')} "
+                        f"marketId={alert.get('marketId')} "
+                        f"fillRate={alert.get('fillRate')}",
+                        file=sys.stderr,
+                    )
+                else:
+                    resp = requests.post(
+                        url,
+                        headers=headers,
+                        json=alert,
+                        timeout=30,
+                    )
+                    if resp.ok:
+                        data = resp.json()
+                        result["status"] = "created"
+                        result["response"] = data
+                        result["alertId"] = data.get("alertId") or data.get("AlertId")
+                        print(
+                            "Created price alert with alertId="
+                            f"{result.get('alertId')}",
+                            file=sys.stderr,
+                        )
+                    else:
+                        result["status"] = "failed"
+                        result["error"] = f"api_error:{resp.status_code}"
+                        result["response_body"] = resp.text
+                        print(
+                            "Price alert creation failed: "
+                            f"{resp.status_code} - {resp.text}",
+                            file=sys.stderr,
+                        )
+
+        except Exception as exc:
+            result["status"] = "failed"
+            result["error"] = f"exception:{exc}"
+            print(f"Error creating price alert {idx}: {exc}", file=sys.stderr)
+
+        results.append(result)
+
+    return results
 
 
 def extract_structured_recommendation(analysis_markdown: str) -> Dict[str, Any]:
@@ -1605,11 +1776,14 @@ def main() -> None:
     context["gemini_analysis_markdown"] = analysis_md
 
     # Parse trading recommendations from Gemini analysis
-    trading_orders = []
+    trading_orders: List[Dict[str, Any]] = []
+    price_alerts: List[Dict[str, Any]] = []
     if analysis_md:
         trading_orders = parse_trading_recommendations(analysis_md)
+        price_alerts = parse_price_alert_suggestions(analysis_md)
         structured_recommendation = extract_structured_recommendation(analysis_md)
         
+        # --- Trading orders ---
         if trading_orders:
             print(f"Parsed {len(trading_orders)} trading order(s) from analysis", file=sys.stderr)
             
@@ -1636,6 +1810,31 @@ def main() -> None:
                 "structured": structured_recommendation,
                 "count": 0,
                 "message": "No actionable trading orders parsed from analysis",
+            }
+
+        # --- Price alerts (SavePriceAlert v2) ---
+        if price_alerts:
+            print(
+                f"Parsed {len(price_alerts)} price alert suggestion(s) from analysis",
+                file=sys.stderr,
+            )
+            alerts_dry_run = os.getenv("EXECUTE_ALERTS", "false").lower() != "true"
+            alert_results = create_price_alerts(
+                client=client,
+                alerts=price_alerts,
+                dry_run=alerts_dry_run,
+            )
+            context["price_alert_recommendations"] = {
+                "alerts": price_alerts,
+                "count": len(price_alerts),
+                "execution_results": alert_results,
+                "dry_run": alerts_dry_run,
+            }
+        else:
+            context["price_alert_recommendations"] = {
+                "alerts": [],
+                "count": 0,
+                "message": "No price alert suggestions parsed from analysis",
             }
 
     # Upload Gemini analysis to Pinecone

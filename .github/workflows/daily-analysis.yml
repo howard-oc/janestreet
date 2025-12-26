@@ -75,6 +75,7 @@ jobs:
           
           # Trading execution control
           EXECUTE_ORDERS: ${{ github.event.inputs.execute_orders || 'false' }}
+          EXECUTE_ALERTS: "true"
         run: |
           TIMESTAMP=$(date +%Y%m%d_%H%M)
           echo "🚀 Running Japan 225 analysis at $TIMESTAMP"

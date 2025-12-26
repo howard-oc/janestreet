@@ -111,6 +111,41 @@ explain why this situation is different or similar. Learn from your past decisio
 ]
 ```
 
+10. **Price Alert Suggestions (SavePriceAlert v2-Compatible):**
+   - Propose a small set of **key price alerts** for Japan 225 based on your technical analysis.
+   - Focus on the most important support / resistance and breakout levels (typically 1–5 alerts).
+   - Assume alerts will be created via the `SavePriceAlert v2` endpoint described in `docs/price_alerts/save_price_alert_v2.md`.
+   - Alerts will be **created only if they do not already exist**, so be deterministic and avoid redundant duplicates.
+
+**Price Alert JSON Format (Array):**
+
+```json
+[
+  {
+    "clientAccountId": {USE_CLIENT_ACCOUNT_ID_FROM_CONTEXT},
+    "alertId": 0,
+    "marketId": {USE_MARKET_ID_FROM_CONTEXT},
+    "criterion": {ALERT_CRITERION_CODE},
+    "direction": {ALERT_DIRECTION_CODE},
+    "fillRate": {ALERT_TRIGGER_PRICE},
+    "emailAddress": null,
+    "expiry": 1,
+    "expiryDate": "{ISO8601_UTC_EXPIRY}",
+    "comment": "{SHORT_HUMAN_LABEL_EG_SUPPORT_OR_BREAKOUT}",
+    "notificationMethod": 0
+  }
+]
+```
+
+**Guidelines for Price Alerts:**
+- Use `clientAccountId` from `context.meta.client_account_id`.
+- Use `marketId` from `context.meta.market_id`.
+- Pick `fillRate` levels that correspond to your key support / resistance / breakout levels.
+- Use appropriate `criterion` and `direction` numeric codes based on whether the alert should trigger **when price trades through / above / below** the level.
+- Use an expiry date that is reasonable for the current regime (for example, 1–5 trading days into the future, encoded as an ISO‑8601 UTC timestamp).
+- `comment` should be a concise English description of the alert purpose (e.g. "Japan 225 downside break of support at 50000").
+- Do **not** include alerts that are trivial, too close together, or clearly irrelevant.
+
 **CRITICAL REQUIREMENTS FOR ORDER EXECUTION:**
 - Extract MarketId from context.meta.market_id
 - Extract TradingAccountId from context.meta.trading_account_id
