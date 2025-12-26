@@ -1,10 +1,19 @@
 name: Daily Japan 225 Analysis
 
 on:
-  # Run daily at 9 AM UTC (before market open)
   schedule:
-    - cron: '0 9 * * *'
-  
+    # 30 minutes before Japan cash open (09:00 JST ~ 00:00 UTC, previous day)
+    - cron: '30 23 * * 0-4'  # Sun–Thu 23:30 UTC
+
+    # 30 minutes after Japan cash open
+    - cron: '30 0 * * 1-5'   # Mon–Fri 00:30 UTC
+
+    # 30 minutes before Japan cash close (15:00 JST ~ 06:00 UTC)
+    - cron: '30 5 * * 1-5'   # Mon–Fri 05:30 UTC
+
+    # 30 minutes after Japan cash close
+    - cron: '30 6 * * 1-5'   # Mon–Fri 06:30 UTC
+
   # Allow manual trigger
   workflow_dispatch:
     inputs:
