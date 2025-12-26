@@ -1,0 +1,40 @@
+name: Daily Japan 225 Analysis
+
+on:
+  schedule:
+    # 30 minutes before Japan cash open (09:00 JST ~ 00:00 UTC, previous day)
+    - cron: '30 23 * * 0-4'  # Sun-Thu 23:30 UTC
+    # 30 minutes after Japan cash open
+    - cron: '30 0 * * 1-5'   # Mon-Fri 00:30 UTC
+    # 30 minutes before Japan cash close (15:00 JST ~ 06:00 UTC)
+    - cron: '30 5 * * 1-5'   # Mon-Fri 05:30 UTC
+    # 30 minutes after Japan cash close
+    - cron: '30 6 * * 1-5'   # Mon-Fri 06:30 UTC
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install uv
+          uv sync
+
+      - name: Run analysis
+        env:
+          CITYINDEX_USERNAME: ${{ secrets.CITYINDEX_USERNAME }}
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          # Add any additional secrets needed by janestreet.py here
+          # EXAMPLE_SECRET: ${{ secrets.EXAMPLE_SECRET }}
+        run: |
+          uv run python janestreet.py > janestreet.json
