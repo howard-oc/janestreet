@@ -1,0 +1,103 @@
+name: Manual Analysis Trigger
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual analysis'
+        required: false
+        default: 'Manual trigger'
+      execute_orders:
+        description: 'Execute orders? (true/false)'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+      notify_slack:
+        description: 'Send Slack notification?'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+jobs:
+  manual-analysis:
+    runs-on: ubuntu-latest
+    environment: dev  # Use dev environment secrets
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: Install dependencies
+        run: |
+          pip install uv
+          uv sync
+      
+      - name: Run analysis
+        env:
+          CITYINDEX_USERNAME: ${{ secrets.CITYINDEX_USERNAME }}
+          CITYINDEX_PASSWORD: ${{ secrets.CITYINDEX_PASSWORD }}
+          CITYINDEX_APPKEY: ${{ secrets.CITYINDEX_APPKEY }}
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GOOGLE_GEMINI_API_KEY: ${{ secrets.GOOGLE_GEMINI_API_KEY }}
+          NOTION_SECOND_BRAIN_TOKEN: ${{ secrets.NOTION_SECOND_BRAIN_TOKEN }}
+          NOTION_SECOND_BRAIN_DB_ID: ${{ secrets.NOTION_SECOND_BRAIN_DB_ID }}
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          EXECUTE_ORDERS: ${{ inputs.execute_orders }}
+        run: |
+          echo "🎯 Manual analysis triggered"
+          echo "Reason: ${{ inputs.reason }}"
+          echo "Execute Orders: ${{ inputs.execute_orders }}"
+          
+          TIMESTAMP=$(date +%Y%m%d_%H%M)
+          uv run python janestreet.py > manual_analysis_${TIMESTAMP}.json
+          
+          echo "✓ Analysis complete"
+          
+          # Show results
+          cat manual_analysis_${TIMESTAMP}.json | jq -r '
+            "=== ANALYSIS RESULTS ===",
+            "Time: " + .generated_at_utc,
+            "Latest Close: " + (.price.japan225_dft.latest_close | tostring),
+            "Headlines: " + (.news.latest_headlines | length | tostring),
+            "Orders: " + (.trading_recommendations.count | tostring),
+            "Execution: " + (if .trading_recommendations.dry_run then "DRY RUN" else "LIVE" end)
+          '
+      
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: manual-analysis-${{ github.run_number }}
+          path: manual_analysis_*.json
+          retention-days: 30
+      
+      - name: Send Slack notification
+        if: inputs.notify_slack == 'true' && always()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "📊 Manual Japan 225 Analysis Complete",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Manual Analysis Triggered*\n*Reason:* ${{ inputs.reason }}\n*Status:* ${{ job.status }}\n*Run:* <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Results>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
