@@ -8,5 +8,7 @@ dependencies = [
     "duckdb>=1.4.3",
     "google-genai>=1.56.0",
     "lightstreamer-client>=0.1",
+    "pinecone",
+    "openai",
     "requests",
 ]
