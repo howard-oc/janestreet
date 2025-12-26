@@ -1,7 +1,7 @@
 """Notion publishing helper for LLM analysis (SecondBrain integration).
 
 This module provides a thin wrapper around the Notion API for sending
-analysis output into a Notion database.
+analysis output into a Notion database with proper markdown formatting.
 
 Configuration
 ------------
@@ -28,6 +28,7 @@ You can adapt ``build_properties`` below if your schema differs.
 from __future__ import annotations
 
 import os
+import re
 import sys
 from typing import Any, Dict, Iterable, List, Optional
 
@@ -98,6 +99,199 @@ def build_properties(
     return properties
 
 
+def _markdown_to_notion_blocks(markdown_text: str) -> List[Dict[str, Any]]:
+    """Convert markdown text to Notion block format.
+    
+    Supports:
+    - Headings (##, ###, ####)
+    - Bullet lists (-, *)
+    - Numbered lists (1., 2., etc)
+    - Code blocks (```...```)
+    - Bold (**text**)
+    - Paragraphs
+    """
+    
+    blocks: List[Dict[str, Any]] = []
+    lines = markdown_text.split('\n')
+    
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.strip()
+        
+        # Skip empty lines
+        if not stripped:
+            i += 1
+            continue
+        
+        # Heading 2 (##)
+        if stripped.startswith('## '):
+            content = stripped[3:].strip()
+            if content:  # Only add if not empty
+                blocks.append({
+                    "object": "block",
+                    "type": "heading_2",
+                    "heading_2": {
+                        "rich_text": _parse_inline_formatting(content)
+                    }
+                })
+            i += 1
+        
+        # Heading 3 (###)
+        elif stripped.startswith('### '):
+            content = stripped[4:].strip()
+            if content:
+                blocks.append({
+                    "object": "block",
+                    "type": "heading_3",
+                    "heading_3": {
+                        "rich_text": _parse_inline_formatting(content)
+                    }
+                })
+            i += 1
+        
+        # Code block (```...```)
+        elif stripped.startswith('```'):
+            # Extract language if specified
+            language = stripped[3:].strip() or "plain text"
+            code_lines = []
+            i += 1
+            
+            # Collect code lines until closing ```
+            while i < len(lines) and not lines[i].strip().startswith('```'):
+                code_lines.append(lines[i])
+                i += 1
+            
+            code_content = '\n'.join(code_lines)
+            if code_content.strip():  # Only add if not empty
+                blocks.append({
+                    "object": "block",
+                    "type": "code",
+                    "code": {
+                        "rich_text": [{"type": "text", "text": {"content": code_content[:2000]}}],
+                        "language": language if language in ["json", "python", "javascript", "bash", "sql"] else "plain text"
+                    }
+                })
+            i += 1  # Skip closing ```
+        
+        # Bullet list (- or *)
+        elif stripped.startswith('- ') or stripped.startswith('* '):
+            content = stripped[2:].strip()
+            if content:
+                blocks.append({
+                    "object": "block",
+                    "type": "bulleted_list_item",
+                    "bulleted_list_item": {
+                        "rich_text": _parse_inline_formatting(content)
+                    }
+                })
+            i += 1
+        
+        # Numbered list (1., 2., etc)
+        elif re.match(r'^\d+\.\s', stripped):
+            content = re.sub(r'^\d+\.\s', '', stripped)
+            if content:
+                blocks.append({
+                    "object": "block",
+                    "type": "numbered_list_item",
+                    "numbered_list_item": {
+                        "rich_text": _parse_inline_formatting(content)
+                    }
+                })
+            i += 1
+        
+        # Regular paragraph
+        else:
+            if stripped:  # Only add non-empty paragraphs
+                blocks.append({
+                    "object": "block",
+                    "type": "paragraph",
+                    "paragraph": {
+                        "rich_text": _parse_inline_formatting(stripped)
+                    }
+                })
+            i += 1
+    
+    return blocks
+
+
+def _parse_inline_formatting(text: str) -> List[Dict[str, Any]]:
+    """Parse inline markdown formatting (bold, code) into Notion rich text.
+    
+    Supports:
+    - **bold**
+    - `code`
+    """
+    
+    if not text:
+        return [{"type": "text", "text": {"content": ""}}]
+    
+    # Simple implementation: detect bold (**text**)
+    # For production, consider using a proper markdown parser
+    
+    parts: List[Dict[str, Any]] = []
+    
+    # Split by bold markers
+    bold_pattern = r'\*\*(.+?)\*\*'
+    code_pattern = r'`(.+?)`'
+    
+    # Combine patterns
+    combined_pattern = f'({bold_pattern}|{code_pattern})'
+    
+    current_pos = 0
+    for match in re.finditer(combined_pattern, text):
+        # Add text before match
+        if match.start() > current_pos:
+            plain_text = text[current_pos:match.start()]
+            if plain_text:
+                parts.append({
+                    "type": "text",
+                    "text": {"content": plain_text}
+                })
+        
+        # Add formatted text
+        matched_text = match.group(0)
+        if matched_text.startswith('**') and matched_text.endswith('**'):
+            # Bold text
+            parts.append({
+                "type": "text",
+                "text": {"content": matched_text[2:-2]},
+                "annotations": {"bold": True}
+            })
+        elif matched_text.startswith('`') and matched_text.endswith('`'):
+            # Code text
+            parts.append({
+                "type": "text",
+                "text": {"content": matched_text[1:-1]},
+                "annotations": {"code": True}
+            })
+        
+        current_pos = match.end()
+    
+    # Add remaining text
+    if current_pos < len(text):
+        remaining = text[current_pos:]
+        if remaining:
+            parts.append({
+                "type": "text",
+                "text": {"content": remaining}
+            })
+    
+    # If no formatting found, return plain text
+    if not parts:
+        parts = [{"type": "text", "text": {"content": text}}]
+    
+    return parts
+
+
+def _chunk_blocks(blocks: List[Dict[str, Any]], max_blocks: int = 100) -> List[List[Dict[str, Any]]]:
+    """Chunk blocks into batches (Notion limit: 100 blocks per request)."""
+    chunks = []
+    for i in range(0, len(blocks), max_blocks):
+        chunks.append(blocks[i:i + max_blocks])
+    return chunks
+
+
 def publish_analysis_to_notion(
     *,
     database_id: str,
@@ -115,7 +309,7 @@ def publish_analysis_to_notion(
     title:
         Page title.
     analysis_markdown:
-        The analysis body, usually markdown text produced by an LLM.
+        The analysis body in markdown format. Will be converted to Notion blocks.
     tags:
         Optional tags to set on the ``Tags`` multi_select property.
     properties_extra:
@@ -125,65 +319,27 @@ def publish_analysis_to_notion(
     headers = _build_headers()
     properties = build_properties(title=title, tags=tags, extra=properties_extra)
 
-    # Notion has limits on the length of a single rich_text object, so we
-    # chunk the markdown into multiple paragraph blocks instead of truncating.
-    def _chunk(text: str, size: int = 1800) -> List[str]:
-        text = text or ""
-        # Prefer splitting on paragraph boundaries where possible.
-        paragraphs = text.replace("\r\n", "\n").split("\n\n")
-        chunks: List[str] = []
-        current: List[str] = []
-        current_len = 0
-        for para in paragraphs:
-            para_block = ("\n\n" if current else "") + para
-            if current_len + len(para_block) > size and current:
-                chunks.append("".join(current))
-                current = [para]
-                current_len = len(para)
-            else:
-                current.append(para_block if current else para)
-                current_len += len(para_block)
-        if current:
-            chunks.append("".join(current))
-        # Fallback: if any chunk is still too long, hard-split it.
-        final_chunks: List[str] = []
-        for c in chunks:
-            if len(c) <= size:
-                final_chunks.append(c)
-            else:
-                for i in range(0, len(c), size):
-                    final_chunks.append(c[i : i + size])
-        return final_chunks
-
-    children: List[Dict[str, Any]] = []
-    for block_text in _chunk(analysis_markdown, size=1800):
-        children.append(
-            {
-                "object": "block",
-                "type": "paragraph",
-                "paragraph": {
-                    "rich_text": [
-                        {
-                            "type": "text",
-                            "text": {"content": block_text},
-                        }
-                    ]
-                },
-            }
-        )
+    # Convert markdown to Notion blocks
+    children = _markdown_to_notion_blocks(analysis_markdown)
+    
+    # Notion has a 100-block limit per request, so we'll create the page first
+    # then append remaining blocks if needed
+    initial_children = children[:100]
 
     payload: Dict[str, Any] = {
         "parent": {"database_id": database_id},
         "properties": properties,
-        "children": children,
+        "children": initial_children,
     }
 
+    # Create the page
     resp = requests.post(
         f"{NOTION_API_BASE}/pages",
         headers=headers,
         json=payload,
         timeout=30,
     )
+    
     try:
         data = resp.json()
     except Exception:  # pragma: no cover - network/JSON
@@ -196,8 +352,28 @@ def publish_analysis_to_notion(
         )
         raise SystemExit(1)
 
+    # Append remaining blocks if there are more than 100
+    if len(children) > 100:
+        page_id = data.get("id")
+        remaining_chunks = _chunk_blocks(children[100:], max_blocks=100)
+        
+        for chunk in remaining_chunks:
+            append_payload = {"children": chunk}
+            append_resp = requests.patch(
+                f"{NOTION_API_BASE}/blocks/{page_id}/children",
+                headers=headers,
+                json=append_payload,
+                timeout=30,
+            )
+            
+            if not append_resp.ok:
+                print(
+                    f"Warning: Failed to append blocks (status {append_resp.status_code})",
+                    file=sys.stderr,
+                )
+                break
+
     return data
 
 
 __all__ = ["publish_analysis_to_notion", "build_properties"]
-

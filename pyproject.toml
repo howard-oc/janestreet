@@ -10,5 +10,6 @@ dependencies = [
     "lightstreamer-client>=0.1",
     "pinecone",
     "openai",
+    "notion-client",
     "requests",
 ]

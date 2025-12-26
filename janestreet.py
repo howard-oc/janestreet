@@ -384,14 +384,26 @@ def fetch_pinecone_similar_news(
         
         similar_items = []
         for match in results.matches:
-            similar_items.append({
+            item = {
                 "score": float(match.score),
                 "story_id": match.id,
                 "headline": match.metadata.get("headline", ""),
                 "publish_ts": match.metadata.get("publish_ts"),
                 "summary": match.metadata.get("summary", ""),
                 "type": match.metadata.get("type", "news"),
-            })
+            }
+            
+            # Include user feedback if present (for analysis vectors)
+            if match.metadata.get("user_status"):
+                item["user_status"] = match.metadata.get("user_status")
+            if match.metadata.get("user_feedback"):
+                item["user_feedback"] = match.metadata.get("user_feedback")
+            if match.metadata.get("generated_at"):
+                item["generated_at"] = match.metadata.get("generated_at")
+            if match.metadata.get("feedback_synced_at"):
+                item["feedback_synced_at"] = match.metadata.get("feedback_synced_at")
+            
+            similar_items.append(item)
         
         print(f"Pinecone returned {len(similar_items)} similar items", file=sys.stderr)
         return similar_items
@@ -1303,11 +1315,36 @@ def run_gemini_analysis(context: Dict[str, Any]) -> str:
     # Compose a single prompt string for the newer client API. Put the
     # framework first so Gemini sees the required response structure before
     # the noisy JSON context.
+    
+    # Extract feedback from RAG results to highlight it
+    feedback_items = [
+        item for item in context.get("rag_top_news", [])
+        if item.get("user_status") or item.get("user_feedback")
+    ]
+    
+    feedback_section = ""
+    if feedback_items:
+        feedback_section = "\n".join([
+            "",
+            "=== YOUR PAST DECISIONS AND FEEDBACK ===",
+            "IMPORTANT: Review your previous feedback on similar situations.",
+            "Learn from these past decisions to make better recommendations.",
+            "",
+        ])
+        for i, item in enumerate(feedback_items[:3], 1):  # Show top 3
+            feedback_section += f"\n**Past Analysis {i}:**\n"
+            feedback_section += f"- **Date**: {item.get('generated_at', 'Unknown')}\n"
+            feedback_section += f"- **Your Decision**: {item.get('user_status', 'N/A')}\n"
+            feedback_section += f"- **Your Reasoning**: {item.get('user_feedback', 'N/A')}\n"
+            feedback_section += f"- **Context**: {item.get('headline', '')[:100]}...\n"
+        feedback_section += "\nConsider this feedback when making today's recommendation.\n"
+    
     full_prompt = "\n".join(
         [
             "You are a senior quantitative trader at Jane Street specialising in Japanese equity index products.",
             "Follow the ANALYSIS FRAMEWORK and RESPONSE STRUCTURE below exactly when writing your answer.",
             "",
+            feedback_section,  # Add feedback section EARLY in prompt
             "=== ANALYSIS FRAMEWORK (FROM docs/claud.md) ===",
             framework_prompt,
             "",
@@ -1616,20 +1653,61 @@ def main() -> None:
         try:
             # Use the generated_at_utc timestamp as the Notion PublishedDate.
             published_ts = context.get("generated_at_utc") or datetime.now(tz=UTC).isoformat()
+            
+            # Get Pinecone analysis ID for consistent naming
+            pinecone_analysis_id = context.get("pinecone_analysis_upload", {}).get("analysis_id", "")
+            
+            # Create a human-readable title with timestamp
+            dt = datetime.fromisoformat(published_ts.replace('Z', '+00:00'))
+            timestamp_str = dt.strftime('%Y-%m-%d %H:%M UTC')
+            notion_title = f"Japan 225 Analysis - {timestamp_str}"
+            
+            # Extract order summary for title suffix
+            orders = context.get("trading_recommendations", {}).get("orders", [])
+            if orders:
+                order_count = len(orders)
+                primary_dir = orders[0].get("Direction", "").upper()
+                notion_title += f" - {order_count} Order(s)"
+                if primary_dir:
+                    notion_title += f" ({primary_dir})"
+            
+            # Build Notion properties including Status, Reason, and PineconeID
+            properties_extra_full = {
+                "PublishedDate": {
+                    "date": {"start": published_ts},
+                },
+                "Status": {
+                    "status": {"name": "Pending"}  # Note: 'status' not 'select'
+                },
+                "Reason": {
+                    "rich_text": []  # Empty - user fills this
+                }
+            }
+            
+            # Add Pinecone ID if available
+            if pinecone_analysis_id:
+                properties_extra_full["PineconeID"] = {
+                    "rich_text": [{"text": {"content": pinecone_analysis_id}}]
+                }
+            
+            # Merge with any extra properties passed in
+            if context.get("properties_extra"):
+                properties_extra_full.update(context["properties_extra"])
+            
             page = publish_analysis_to_notion(
                 database_id=notion_db_id,
-                title="Japan 225 Daily Playbook",
+                title=notion_title,
                 analysis_markdown=analysis_md,
                 tags=["Japan225", "Gemini", "SecondBrain"],
-                properties_extra={
-                    "PublishedDate": {
-                        "date": {"start": published_ts},
-                    }
-                },
+                properties_extra=properties_extra_full,
             )
             context["notion_page_id"] = page.get("id")
+            context["notion_page_url"] = page.get("url")
+            context["notion_title"] = notion_title
+            print(f"Published to Notion: {notion_title}", file=sys.stderr)
         except Exception as exc:  # pragma: no cover - external API
             context.setdefault("notion_error", str(exc))
+            print(f"Warning: Notion publishing failed: {exc}", file=sys.stderr)
 
     # Close the DuckDB connection
     con.close()

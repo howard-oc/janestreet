@@ -13,13 +13,22 @@
 ## Task: Daily Japan 225 Trading Analysis
 
 Analyze the Japan 225 market and provide actionable trading recommendations. Your analysis should incorporate:
+- **YOUR PAST FEEDBACK** - Review any previous decisions and reasoning (if available in context)
 - Current open positions and their P&L
 - Latest news and market-moving events
 - Price action and technical levels
 - Economic calendar events (if any)
 - Currency dynamics (USD/JPY impact on Japan 225)
 
+**CRITICAL**: If you see past feedback where you REJECTED or ACCEPTED similar recommendations, 
+explain why this situation is different or similar. Learn from your past decisions.
+
 ### Required Structure:
+
+0. **Review Past Feedback (If Available):**
+   - If the context includes `user_status` and `user_feedback` from past analyses, START by acknowledging it
+   - Example: "Previously you rejected a similar close recommendation on [date] because [reason]. Today's situation is [similar/different] because..."
+   - Use this to inform your current recommendation
 
 1. **PnL Summary (Lead):** 
    - Analyze current open positions from the context data
