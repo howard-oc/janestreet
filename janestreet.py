@@ -1476,7 +1476,7 @@ def run_gemini_analysis(context: Dict[str, Any]) -> str:
 
     # Use a currently supported Gemini model. Allow override via env so we can
     # switch models without changing code when Google deprecates families.
-    model_name = os.getenv("GOOGLE_GEMINI_MODEL", "gemini-2.5-flash")
+    model_name = os.getenv("GOOGLE_GEMINI_MODEL", "gemini-3-flash-preview")
 
     # The claud.md file already defines the full analysis framework and the
     # exact response structure we want. Treat that as the primary set of
