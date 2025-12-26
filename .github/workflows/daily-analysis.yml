@@ -45,7 +45,110 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           EXECUTE_ORDERS: ${{ secrets.EXECUTE_ORDERS }}
         run: |
+          # Create temp .env file
+          cat > .env.temp << EOF
+          CITYINDEX_USERNAME=${CITYINDEX_USERNAME}
+          CITYINDEX_PASSWORD=${CITYINDEX_PASSWORD}
+          CITYINDEX_APPKEY=${CITYINDEX_APPKEY}
+          GOOGLE_GEMINI_API_KEY=${GOOGLE_GEMINI_API_KEY}
+          NOTION_SECOND_BRAIN_DB_ID=${NOTION_SECOND_BRAIN_DB_ID}
+          NOTION_SECOND_BRAIN_TOKEN=${NOTION_SECOND_BRAIN_TOKEN}
+          FMP_API_KEY=${FMP_API_KEY}
+          PINECONE_API_KEY=${PINECONE_API_KEY}
+          OPENAI_API_KEY=${OPENAI_API_KEY}
+          EXECUTE_ORDERS=${EXECUTE_ORDERS}
+          EOF
+
+          # Export vars
+          set -a
+          source .env.temp
+          set +a
+
+          # Run with exported vars
           uv run python janestreet.py > janestreet.json
+
+          # Cleanup
+          rm .env.temp
+
+      - name: Sync Notion feedback
+        env:
+          CITYINDEX_USERNAME: ${{ secrets.CITYINDEX_USERNAME }}
+          CITYINDEX_PASSWORD: ${{ secrets.CITYINDEX_PASSWORD }}
+          CITYINDEX_APPKEY: ${{ secrets.CITYINDEX_APPKEY }}
+
+          GOOGLE_GEMINI_API_KEY: ${{ secrets.GOOGLE_GEMINI_API_KEY }}
+          NOTION_SECOND_BRAIN_DB_ID: ${{ secrets.NOTION_SECOND_BRAIN_DB_ID }}
+          NOTION_SECOND_BRAIN_TOKEN: ${{ secrets.NOTION_SECOND_BRAIN_TOKEN }}
+
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          EXECUTE_ORDERS: ${{ secrets.EXECUTE_ORDERS }}
+        run: |
+          # Create temp .env file
+          cat > .env.temp << EOF
+          CITYINDEX_USERNAME=${CITYINDEX_USERNAME}
+          CITYINDEX_PASSWORD=${CITYINDEX_PASSWORD}
+          CITYINDEX_APPKEY=${CITYINDEX_APPKEY}
+          GOOGLE_GEMINI_API_KEY=${GOOGLE_GEMINI_API_KEY}
+          NOTION_SECOND_BRAIN_DB_ID=${NOTION_SECOND_BRAIN_DB_ID}
+          NOTION_SECOND_BRAIN_TOKEN=${NOTION_SECOND_BRAIN_TOKEN}
+          FMP_API_KEY=${FMP_API_KEY}
+          PINECONE_API_KEY=${PINECONE_API_KEY}
+          OPENAI_API_KEY=${OPENAI_API_KEY}
+          EXECUTE_ORDERS=${EXECUTE_ORDERS}
+          EOF
+
+          # Export vars
+          set -a
+          source .env.temp
+          set +a
+
+          # Run with exported vars
+          uv run python sync_notion_feedback_complete.py
+
+          # Cleanup
+          rm .env.temp
+
+      - name: Query historical analysis
+        env:
+          CITYINDEX_USERNAME: ${{ secrets.CITYINDEX_USERNAME }}
+          CITYINDEX_PASSWORD: ${{ secrets.CITYINDEX_PASSWORD }}
+          CITYINDEX_APPKEY: ${{ secrets.CITYINDEX_APPKEY }}
+
+          GOOGLE_GEMINI_API_KEY: ${{ secrets.GOOGLE_GEMINI_API_KEY }}
+          NOTION_SECOND_BRAIN_DB_ID: ${{ secrets.NOTION_SECOND_BRAIN_DB_ID }}
+          NOTION_SECOND_BRAIN_TOKEN: ${{ secrets.NOTION_SECOND_BRAIN_TOKEN }}
+
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          EXECUTE_ORDERS: ${{ secrets.EXECUTE_ORDERS }}
+        run: |
+          # Create temp .env file
+          cat > .env.temp << EOF
+          CITYINDEX_USERNAME=${CITYINDEX_USERNAME}
+          CITYINDEX_PASSWORD=${CITYINDEX_PASSWORD}
+          CITYINDEX_APPKEY=${CITYINDEX_APPKEY}
+          GOOGLE_GEMINI_API_KEY=${GOOGLE_GEMINI_API_KEY}
+          NOTION_SECOND_BRAIN_DB_ID=${NOTION_SECOND_BRAIN_DB_ID}
+          NOTION_SECOND_BRAIN_TOKEN=${NOTION_SECOND_BRAIN_TOKEN}
+          FMP_API_KEY=${FMP_API_KEY}
+          PINECONE_API_KEY=${PINECONE_API_KEY}
+          OPENAI_API_KEY=${OPENAI_API_KEY}
+          EXECUTE_ORDERS=${EXECUTE_ORDERS}
+          EOF
+
+          # Export vars
+          set -a
+          source .env.temp
+          set +a
+
+          # Run with exported vars
+          uv run python query_historical_analysis.py --days 7
+
+          # Cleanup
+          rm .env.temp
 
       - name: Sync Notion feedback
         env:
