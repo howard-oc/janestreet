@@ -45,4 +45,15 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           EXECUTE_ORDERS: ${{ secrets.EXECUTE_ORDERS }}
         run: |
-          uv run python janestreet.py > janestreet.json
+          uv run \
+            --env CITYINDEX_USERNAME \
+            --env CITYINDEX_PASSWORD \
+            --env CITYINDEX_APPKEY \
+            --env GOOGLE_GEMINI_API_KEY \
+            --env NOTION_SECOND_BRAIN_DB_ID \
+            --env NOTION_SECOND_BRAIN_TOKEN \
+            --env FMP_API_KEY \
+            --env PINECONE_API_KEY \
+            --env OPENAI_API_KEY \
+            --env EXECUTE_ORDERS \
+            python janestreet.py > janestreet.json
