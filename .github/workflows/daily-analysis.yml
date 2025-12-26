@@ -64,7 +64,7 @@ jobs:
           
           # Google Gemini LLM
           GOOGLE_GEMINI_API_KEY: ${{ secrets.GOOGLE_GEMINI_API_KEY }}
-          GOOGLE_GEMINI_MODEL: gemini-2.5-flash
+          GOOGLE_GEMINI_MODEL: gemini-2.0-pro
           
           # Notion Integration
           NOTION_SECOND_BRAIN_TOKEN: ${{ secrets.NOTION_SECOND_BRAIN_TOKEN }}
