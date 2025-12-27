@@ -47,6 +47,7 @@ Follow this numbered structure in your markdown response so it is easy to review
 
 2. **Key News and Drivers (Last ~48 Hours)**
    - Summarise the **handful of most important headlines/stories** for Japan 225.
+   - Incorporate any relevant macro commentary from `macro_notes.kobeissi_tweets` (Kobeissi Twitter threads) when it materially affects your Japan 225 view.
    - Focus on: BoJ policy, Japanese macro data, USD/JPY moves, regional/global risk sentiment.
    - Note any **mismatch** between news tone and price reaction (e.g. “negative news, but market up”).
 

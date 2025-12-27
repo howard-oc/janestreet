@@ -1,5 +1,5 @@
 {
-  "prompt": "# prompt.md\n\n## Role Assignment\n\n**Role:** Senior Quant Trader, Jane Street (Asian Equity Index Arbitrage Desk).  \n**Current Date:** {USE_CURRENT_DATE_FROM_CONTEXT}\n**Market Snapshot:** {EXTRACT_FROM_PRICE_DATA_IN_CONTEXT}\n\n## Market Context (Last 48 Hours)\n\n{ANALYZE_FROM_NEWS_AND_CALENDAR_DATA_IN_CONTEXT}\n\n## Task: Daily Japan 225 Trading Analysis\n\nAnalyze the Japan 225 market and provide actionable trading recommendations. Your analysis should incorporate:\n- **YOUR PAST FEEDBACK** - Review any previous decisions and reasoning (if available in context)\n- Current open positions and their P&L\n- Latest news and market-moving events\n- Price action and technical levels\n- Economic calendar events (if any)\n- Currency dynamics (USD/JPY impact on Japan 225)\n\n**CRITICAL**: If you see past feedback where you REJECTED or ACCEPTED similar recommendations, \nexplain why this situation is different or similar. Learn from your past decisions.\n\n### Required Structure:\n\n0. **Review Past Feedback (If Available):**\n   - If the context includes `user_status` and `user_feedback` from past analyses, START by acknowledging it\n   - Example: \"Previously you rejected a similar close recommendation on [date] because [reason]. Today's situation is [similar/different] because...\"\n   - Use this to inform your current recommendation\n\n1. **PnL Summary (Lead):** \n   - Analyze current open positions from the context data\n   - Calculate unrealized P&L in GBP based on current prices vs entry prices\n   - Present as a clear table\n\n2. **Top News (Last 2 Days):** \n   - Summarize the most market-relevant headlines from the news data\n   - Focus on: BoJ policy, Japanese economic data, USD/JPY moves, global risk sentiment\n   - Highlight any divergence between news sentiment and price action\n\n3. **Market Analysis:** \n   - Analyze the current price level relative to recent history\n   - Identify key support/resistance levels from the price bars\n   - Assess momentum and trend direction\n   - Note any unusual volatility or price patterns\n\n4. **Economic Calendar Impact:** \n   - Review any Japan/JPY economic events from the calendar data\n   - Assess potential market impact of upcoming releases\n   - Note timing of events relative to trading hours\n\n5. **Technical Levels:** \n   - Define key price levels based on recent price action\n   - Calculate risk/reward ratios for potential trades\n   - Identify stop loss and take profit levels\n\n6. **Currency Sensitivity:** \n   - Analyze USD/JPY correlation with Japan 225\n   - Assess yen carry trade dynamics\n   - Note any currency hedging considerations\n\n7. **Risk Assessment:** \n   - Evaluate current portfolio risk based on open positions\n   - Assess market volatility and liquidity conditions\n   - Identify key risk factors (news events, time of day, market conditions)\n\n8. **Trading Strategy:** \n   - Recommend: BUY, SELL, HOLD, or CLOSE existing positions\n   - Provide clear rationale based on the analysis above\n   - Define entry timing and execution strategy\n\n9. **Order Execution:** \n   - Output executable orders as a JSON array based on your trading recommendation\n   - Use actual MarketId, TradingAccountId, and current prices from the context data\n   - Calculate appropriate position sizes based on risk parameters\n   - Set realistic trigger prices based on last 4-hour price action\n\n**Order Format Template:**\n\n```json\n[\n  {\n    \"isTrade\": false,\n    \"AutoRollover\": false,\n    \"AuditId\": \"daily_japan225_trade\",\n    \"Currency\": null,\n    \"Direction\": \"buy or sell\",\n    \"LastChangedDateTimeUTC\": null,\n    \"MarketName\": \"{USE_MARKET_NAME_FROM_CONTEXT}\",\n    \"BidPrice\": {CALCULATE_FROM_CURRENT_PRICES},\n    \"PositionMethodId\": 1,\n    \"ExpiryDateTimeUTCDate\": null,\n    \"Status\": null,\n    \"MarketId\": {USE_MARKET_ID_FROM_CONTEXT},\n    \"LastChangedDateTimeUTCDate\": null,\n    \"Reference\": \"{DESCRIPTIVE_ORDER_REFERENCE}\",\n    \"OfferPrice\": {CALCULATE_FROM_CURRENT_PRICES},\n    \"TriggerPrice\": {SET_BASED_ON_TECHNICAL_ANALYSIS},\n    \"OrderId\": 0,\n    \"Quantity\": {CALCULATE_POSITION_SIZE},\n    \"QuoteId\": null,\n    \"IfDone\": [],\n    \"TradingAccountId\": {USE_TRADING_ACCOUNT_ID_FROM_CONTEXT},\n    \"OcoOrder\": null,\n    \"Type\": null,\n    \"Applicability\": \"GTC\",\n    \"ExpiryDateTimeUTC\": null\n  }\n]\n```\n\n**CRITICAL REQUIREMENTS FOR ORDER EXECUTION:**\n- Extract MarketId from context.meta.market_id\n- Extract TradingAccountId from context.meta.trading_account_id\n- Use latest_close from context.price.japan225_dft for price calculations\n- Set Direction to 'buy' or 'sell' (lowercase) based on your recommendation\n- Calculate TriggerPrice based on technical analysis of recent price bars\n- Set BidPrice slightly below latest close, OfferPrice slightly above\n- Calculate Quantity based on reasonable position sizing (typically 1-5 contracts)\n- Set Reference to describe the trade setup (e.g., \"Long_Breakout_50800\", \"Short_Resistance_51000\")\n- Always set OrderId to 0 (platform generates)\n- Always set IfDone to [] (empty array)\n- Always set isTrade to false\n- Always set Applicability to \"GTC\" (Good Till Cancelled)\n\n**Position Sizing Guidelines:**\n- For new positions: 1-3 contracts typical\n- For scaling into existing: 1-2 contracts\n- For closing positions: match existing position quantity\n- Consider current volatility and account size\n\n**Price Level Guidelines:**\n- BidPrice: Latest close - small spread (e.g., latest_close - 10)\n- OfferPrice: Latest close + small spread (e.g., latest_close + 10)\n- TriggerPrice: Your technical entry level based on support/resistance\n\n## Response Style\n\n- **Tone:** Professional, analytical, and action-oriented\n- **Terminology:** Use proper trading terminology (support, resistance, momentum, breakout, reversal, etc.)\n- **Precision:** Be specific with price levels, quantities, and timing\n- **Rationale:** Always explain the reasoning behind recommendations\n\n## Special Instructions\n\n- If no clear trading opportunity exists, recommend HOLD and explain why\n- If existing positions should be closed, recommend specific exit orders\n- Always consider risk management in position sizing\n- Reference specific data points from the context to support your analysis\n- Output orders ONLY if there is a clear, actionable trade setup\n",
+  "prompt": "# Daily Japan 225 Trading Framework\n\n## Role and Objective\n\n**Role:** Senior Quant Trader on an Asian equity index desk at Jane Street.  \n**Primary Objective:** For today\u2019s session, decide whether you should be **flat**, **small long**, **small short**, or **make no trade at all** in the Japan 225 DFT market, based on the full context provided.\n\nDefault stance: **no trade** unless there is a clearly asymmetric risk/reward opportunity.\n\n## Context You Receive\n\nThe JSON context includes (at minimum):\n- Latest **Japan 225 prices** and recent history.\n- Recent **news headlines and stories** for Japan 225.\n- Prior-day Japan 225 news stored in DuckDB.\n- **Open positions** and **active orders** for the primary trading account.\n- A snapshot of the **economic calendar**, filtered towards Japan/JPY items.\n- **RAG results** from Pinecone and other retrievers, including:\n  - Past **analyses** with your own `user_status` and `user_feedback` when available.\n\nTreat this as today\u2019s complete information set. You are not allowed to assume extra data.\n\n## Task: Daily Japan 225 Decision\n\nFor today\u2019s date (available in the JSON context), you must:\n\n1. Form a view on **direction and risk** for Japan 225.\n2. Decide between: **NO TRADE**, **OPEN NEW LONG**, **OPEN NEW SHORT**, **ADJUST / CLOSE EXISTING POSITIONS**.\n3. Only if the setup is clearly compelling, propose one or more **executable orders** in the required JSON format.\n4. Optionally suggest a **small number of important price alerts** if they materially help manage the risk of your proposed stance.\n\nYou are optimising for **process quality and consistency over time**, not for constant trading activity.\n\n## Required Analysis Structure\n\nFollow this numbered structure in your markdown response so it is easy to review later.\n\n0. **Review Past Feedback (If Available)**\n   - If the context includes `user_status` and `user_feedback` in `rag_top_news`, **start here**.\n   - Briefly summarise 1\u20133 relevant past decisions and what you learned from them.\n   - Explicitly state whether today\u2019s situation is **similar** or **different**, and how that changes your risk appetite.\n\n1. **Position and PnL Snapshot**\n   - Describe current open positions and any obvious concentration or risk.\n   - If data allows, approximate unrealised PnL in base currency; otherwise describe direction and size.\n   - Call out if you are already long/short Japan 225 or related index exposure (e.g. iShares Japan).\n\n2. **Key News and Drivers (Last ~48 Hours)**\n   - Summarise the **handful of most important headlines/stories** for Japan 225.\n   - Incorporate any relevant macro commentary from `macro_notes.kobeissi_tweets` (Kobeissi Twitter threads) when it materially affects your Japan 225 view.\n   - Focus on: BoJ policy, Japanese macro data, USD/JPY moves, regional/global risk sentiment.\n   - Note any **mismatch** between news tone and price reaction (e.g. \u201cnegative news, but market up\u201d).\n\n3. **Market and Price Action**\n   - Place the current level relative to recent history (e.g. last few sessions/weeks).\n   - Identify key **support/resistance** zones and any obvious momentum/trend.\n   - Mention unusual volatility, gaps, or liquidity conditions if visible from the bars.\n\n4. **Macro / Calendar Considerations**\n   - Highlight any upcoming **Japan/JPY economic events** and their likely risk for today.\n   - Comment on whether it is sensible to add risk into, or ahead of, these events.\n\n5. **Risk Assessment and Stance**\n   - Weigh together positions, news, price action, and calendar.\n   - State clearly your **recommended stance**:\n     - `NO TRADE / HOLD CASH` (default)\n     - `MAINTAIN EXISTING POSITION`\n     - `OPEN SMALL LONG`\n     - `OPEN SMALL SHORT`\n     - `CLOSE OR TRIM EXISTING POSITION`\n   - Be explicit about **why doing nothing may be optimal** if that is your recommendation.\n\n6. **Concrete Trade Plan (If Any)**\n   - Only if you recommend a trade or adjustment, describe:\n     - Direction and rough size (e.g. \u201c1\u20133 contracts, small vs account size\u201d).\n     - Key entry region, stop area, and target region.\n     - How this fits with your past feedback (e.g. \u201cPreviously you overtraded similar setups; here the edge is stronger because \u2026\u201d).\n\n7. **Summary Recommendation (One Paragraph)**\n   - A short, plain-English summary the human can read in 20\u201330 seconds.\n   - Example: \u201cToday I recommend **no new Japan 225 risk**; maintain existing exposure only, because \u2026\u201d.\n\n8. **Order Execution (Machine-Readable JSON)**\n   - If and only if you recommend one or more trades, output executable orders as a **JSON array in a ```json code block**.\n   - Use actual `MarketId`, `TradingAccountId`, and price context from the JSON.\n   - Respect risk: typically **1\u20133 contracts** per leg unless the context clearly justifies more.\n\n### Order JSON Template (Must Follow)\n\n```json\n[\n  {\n    \"isTrade\": false,\n    \"AutoRollover\": false,\n    \"AuditId\": \"daily_japan225_trade\",\n    \"Currency\": null,\n    \"Direction\": \"buy or sell\",\n    \"LastChangedDateTimeUTC\": null,\n    \"MarketName\": \"{USE_MARKET_NAME_FROM_CONTEXT}\",\n    \"BidPrice\": {CALCULATE_FROM_CURRENT_PRICES},\n    \"PositionMethodId\": 1,\n    \"ExpiryDateTimeUTCDate\": null,\n    \"Status\": null,\n    \"MarketId\": {USE_MARKET_ID_FROM_CONTEXT},\n    \"LastChangedDateTimeUTCDate\": null,\n    \"Reference\": \"{DESCRIPTIVE_ORDER_REFERENCE}\",\n    \"OfferPrice\": {CALCULATE_FROM_CURRENT_PRICES},\n    \"TriggerPrice\": {SET_BASED_ON_TECHNICAL_ANALYSIS},\n    \"OrderId\": 0,\n    \"Quantity\": {CALCULATE_POSITION_SIZE},\n    \"QuoteId\": null,\n    \"IfDone\": [],\n    \"TradingAccountId\": {USE_TRADING_ACCOUNT_ID_FROM_CONTEXT},\n    \"OcoOrder\": null,\n    \"Type\": null,\n    \"Applicability\": \"GTC\",\n    \"ExpiryDateTimeUTC\": null\n  }\n]\n```\n\n### Critical Requirements for Orders\n\n- Extract `MarketId` from `context.meta.market_id`.\n- Extract `TradingAccountId` from `context.meta.trading_account_id`.\n- Use `latest_close` from `context.price.japan225_dft` as the anchor price.\n- `Direction` must be `'buy'` or `'sell'` (lowercase).\n- `TriggerPrice` must be a sensible technical level (support/resistance/breakout), **not** just the last tick.\n- `BidPrice` slightly below `latest_close`, `OfferPrice` slightly above.\n- `Quantity` small and sized with volatility and account risk in mind (typically 1\u20133 contracts).\n- `Reference` should describe the setup (e.g. `\"Long_Breakout_50800\"`, `\"Short_Overextension_51000\"`).\n- Always set `OrderId` to `0`, `IfDone` to `[]`, `isTrade` to `false`, and `Applicability` to `\"GTC\"`.\n\n### Optional: Price Alert Suggestions (SavePriceAlert v2)\n\nOnly propose alerts if they materially help manage the risk of your recommended stance (typically 1\u20133 levels):\n- Important downside break levels.\n- Key resistance where you would reconsider the view.\n\nIf you propose alerts, output them as a **separate ```json code block** with an array of alert objects.\n\n```json\n[\n  {\n    \"clientAccountId\": {USE_CLIENT_ACCOUNT_ID_FROM_CONTEXT},\n    \"alertId\": 0,\n    \"marketId\": {USE_MARKET_ID_FROM_CONTEXT},\n    \"criterion\": {ALERT_CRITERION_CODE},\n    \"direction\": {ALERT_DIRECTION_CODE},\n    \"fillRate\": {ALERT_TRIGGER_PRICE},\n    \"emailAddress\": null,\n    \"expiry\": 1,\n    \"expiryDate\": \"{ISO8601_UTC_EXPIRY}\",\n    \"comment\": \"{SHORT_HUMAN_LABEL_EG_SUPPORT_OR_BREAKOUT}\",\n    \"notificationMethod\": 0\n  }\n]\n```\n\n## Response Style\n\n- **Tone:** Professional, analytical, and conservative with risk.\n- **Precision:** Be specific with price levels, quantities, and timing, but avoid false certainty.\n- **Rationale:** Every recommendation must be backed by clear references to prices, news, and calendar.\n- **Honesty:** If there is no clear edge, explicitly say so and recommend **no trade**.\n\n## Special Instructions\n\n- Prioritise **capital preservation** and process consistency over frequent trading.\n- If existing positions should be reduced or closed, specify concrete exit orders in the JSON block.\n- Always keep the order and alert JSON valid and parseable; if in doubt, omit orders entirely rather than guessing.\n",
   "meta": {
     "market_id": 400616391,
     "trading_account_id": 400236033,
@@ -8,6 +8,12 @@
   },
   "news": {
     "latest_headlines": [
+      {
+        "story_id": "urn:newsml:reuters.com:20251226:nL6N3XW0FO",
+        "headline": "GLOBAL MARKETS-Wall Street lingers around record highs; precious metals rise",
+        "publish_ts": "2025-12-26 20:35:02.689000+00:00",
+        "summary": "\n        * \n      Indexes stay at record peaks, traders look for Santa Claus\nrally\n    \n\n        * \n      Gold and silver smash records on rate cut expectations,\ngeopolitics \n    \n\n        * \n      Dollar under pressure as investors contemplate rates \n    \n\n        * \n      Yen softens on persistent intervention worries\n    \n\n  \n (Updates with afternoon prices)\n    By Isla Binnie and Ankur Banerjee\n       Dec 26 (Reuters) - Major U.S. stock indexes oscillated\naround record peaks on Friday in mut"
+      },
       {
         "story_id": "urn:newsml:reuters.com:20251226:nL6N3XW0CT",
         "headline": "GLOBAL MARKETS-Wall Street holds on to year-end highs; precious metals keep their lustre",
@@ -66,7 +72,7 @@
         "story_id": "urn:newsml:reuters.com:20251226:nL4N3XW01Y",
         "headline": "Japan's Topix gauge touches record high on easing debt concerns",
         "publish_ts": "2025-12-26 02:20:01.941000+00:00",
-        "summary": "    By Rocky Swift\n       TOKYO, Dec 26 (Reuters) - Japan's broad Topix gauge\ntouched a record high on Friday, as easing concerns about the\nnation's debt gave shares a tailwind on one of the final trading\ndays of 2025.\n    The Topix <.TOPX> was up 0.5% in early trading, and reached\nan all-time intraday high of 3,436.75. The blue-chip Nikkei\nindex <.N225> climbed 0.9% to 50,865.30 and was set for a 26%\njump this year.\n    The cabinet on Friday approved a record budget for the next\nfiscal year, ai"
+        "summary": "Japan's Topix gauge touches record high on easing debt concerns"
       },
       {
         "story_id": "urn:newsml:reuters.com:20251226:nP8N3XP05M",
@@ -181,62 +187,80 @@
         "headline": "GLOBAL MARKETS-Stocks up as markets wind down to bumper year; gold and silver smash records",
         "publish_ts": "2025-12-24 05:21:57.795000+00:00",
         "summary": "GLOBAL MARKETS-Stocks up as markets wind down to bumper year; gold and silver smash records"
-      },
-      {
-        "story_id": "urn:newsml:reuters.com:20251224:nL1N3XU03X",
-        "headline": "EMERGING MARKETS-South Korean won jumps on pension fund support; stocks flat",
-        "publish_ts": "2025-12-24 05:19:49.744000+00:00",
-        "summary": "EMERGING MARKETS-South Korean won jumps on pension fund support; stocks flat"
       }
     ],
     "yesterdays_news": [
       {
-        "story_id": "urn:newsml:reuters.com:20251225:nP8N3XA07B",
-        "headline": "JAPAN'S NIKKEI SHARE AVERAGE ERASES GAINS, LAST DOWN 0.04%  ",
-        "publish_ts": "2025-12-25 02:18:44.135000",
-        "summary": "JAPAN'S NIKKEI SHARE AVERAGE ERASES GAINS, LAST DOWN 0.04%  "
+        "story_id": "urn:newsml:reuters.com:20251226:nP8N3XP05M",
+        "headline": "JAPAN'S NIKKEI SHARE AVERAGE UP 1% AT 50,913.47",
+        "publish_ts": "2025-12-26 02:16:45.693000",
+        "summary": "JAPAN'S NIKKEI SHARE AVERAGE UP 1% AT 50,913.47"
       },
       {
-        "story_id": "urn:newsml:reuters.com:20251225:nL4N3XV019",
-        "headline": "Japan's Nikkei inches up as tech stocks track Wall Street's gains ",
-        "publish_ts": "2025-12-25 02:28:10.057000",
-        "summary": "Japan's Nikkei inches up as tech stocks track Wall Street's gains "
+        "story_id": "urn:newsml:reuters.com:20251226:nL4N3XW01Y",
+        "headline": "Japan's Topix gauge touches record high on easing debt concerns",
+        "publish_ts": "2025-12-26 02:20:01.941000",
+        "summary": "Japan's Topix gauge touches record high on easing debt concerns"
       },
       {
-        "story_id": "urn:newsml:reuters.com:20251225:nBER93lSjz",
+        "story_id": "urn:newsml:reuters.com:20251226:nL4N3XU0PP",
+        "headline": "ADVISORY-Japan corporate earnings week ahead",
+        "publish_ts": "2025-12-26 03:00:01.232000",
+        "summary": "       Dec 26 (Reuters) - Please be advised that there are no corporate earnings scheduled for\nJapan (.N225) in the week ahead.\n\n (Compiled by Bengaluru Newsroom)\n ((Diaries@thomsonreuters.com))"
+      },
+      {
+        "story_id": "urn:newsml:reuters.com:20251226:nBER3GJDqG",
         "headline": "MAJOR STOCK MARKET INDICES WORLDWIDE",
-        "publish_ts": "2025-12-25 03:38:15.509000",
-        "summary": "MAJOR STOCK MARKET INDICES WORLDWIDE"
+        "publish_ts": "2025-12-26 03:42:14.556000",
+        "summary": "\nBEIJING, Dec 26 (Bernama-Xinhua) -- The following are the indices of major\nstock markets worldwide on Friday, reported Xinhua.\n\n\u00a0\n\nAsia (Friday)\n\nThe Shanghai Composite Index opened at 3,957.83 points, down 1.79 points, or\n0.05 per cent.\n\nThe Shenzhen Component Index opened at 13,539.05 points, up 7.64 points, or\n0.06 per cent.\n\nThe Hang Seng Index had no trading.\n\nThe S&P/ASX 200 index had no trading.\n\nThe 225-issue Nikkei Stock Average opened at 50,527.13 points, up 119.34\npoints, or 0.24 per"
       },
       {
-        "story_id": "urn:newsml:reuters.com:20251225:nL1N3XV023",
-        "headline": "Japan's Nikkei ends higher as tech stocks track Wall Street's gains",
-        "publish_ts": "2025-12-25 07:17:49.090000",
-        "summary": "Japan's Nikkei ends higher as tech stocks track Wall Street's gains"
+        "story_id": "urn:newsml:reuters.com:20251226:nL4N3XW048",
+        "headline": "EMERGING MARKETS-Asian equities set for strong weekly gains; Taiwan, S.Korea lead tech-driven surge",
+        "publish_ts": "2025-12-26 04:29:30.802000",
+        "summary": "\n        * \n      Taiwan stocks hit record high, up nearly 3% this week\n    \n\n        * \n      South Korean stocks hit two week-high, up 3% this week\n    \n\n        * \n      South Korean won eyes best week since November 2022\n    \n\n  \n    By Rajasik Mukherjee\n       Dec 26 (Reuters) - Most Asian equities were headed for\ntheir best week in more than a month on Friday, buoyed by a\nrally in technology shares, with Taiwan's benchmark index\nhitting a record high and South Korea's KOSPI climbing to a\nt"
       },
       {
-        "story_id": "urn:newsml:reuters.com:20251224:nL6N3XU0IJ",
-        "headline": "GLOBAL MARKETS-S&P 500, Dow hit all-time closing highs; gold, silver touch records",
-        "publish_ts": "2025-12-25 08:11:53.787000",
-        "summary": "GLOBAL MARKETS-S&P 500, Dow hit all-time closing highs; gold, silver touch records"
+        "story_id": "urn:newsml:reuters.com:20251226:nL1N3XW02C",
+        "headline": "EMERGING MARKETS-Asian equities set for strong weekly gains; Taiwan, S.Korea lead tech-driven surge",
+        "publish_ts": "2025-12-26 04:41:08.709000",
+        "summary": " (.)\n\n        * \n      Taiwan stocks hit record high, up nearly 3% this week\n    \n\n        * \n      South Korean stocks hit two week-high, up 3% this week\n    \n\n        * \n      South Korean won eyes best week since November 2022\n    \n\n  \n    By Rajasik Mukherjee\n       Dec 26 (Reuters) - Most Asian equities were headed for\ntheir best week in more than a month on Friday, buoyed by a\nrally in technology shares, with Taiwan's benchmark index\nhitting a record high and South Korea's KOSPI climbing t"
       },
       {
-        "story_id": "urn:newsml:reuters.com:20251225:nL4N3XV077",
-        "headline": "Asia Morning Call-Global Markets",
-        "publish_ts": "2025-12-25 20:40:01.971000",
-        "summary": "Asia Morning Call-Global Markets"
+        "story_id": "urn:newsml:reuters.com:20251226:nL4N3XW08P",
+        "headline": "EMERGING MARKETS-Asian equities eye strong weekly gains; Taiwan, S.Korea lead tech-driven surge",
+        "publish_ts": "2025-12-26 07:11:51.516000",
+        "summary": " (.)\n\n        * \n      Taiwan stocks hit record high, up 3% this week\n    \n\n        * \n      S.Korean stocks hit two-week high, up 2.5% this week\n    \n\n        * \n      South Korean won eyes best week since late April\n    \n\n  \n    By Rajasik Mukherjee\n       Dec 26 (Reuters) - Most Asian equities were set for\ntheir strongest week in more than a month on Friday, buoyed by a\nrally in technology shares, with Taiwan's benchmark index\nhitting a record high and South Korea's KOSPI climbing to a\ntwo-we"
       },
       {
-        "story_id": "urn:newsml:reuters.com:20251225:nL4N3XV078",
-        "headline": "UPDATE 1-Asia Morning Call-Global Markets",
-        "publish_ts": "2025-12-25 20:40:02.202000",
-        "summary": "UPDATE 1-Asia Morning Call-Global Markets"
+        "story_id": "urn:newsml:reuters.com:20251226:nL1N3XW038",
+        "headline": "EMERGING MARKETS-Asian equities eye strong weekly gains; Taiwan, S.Korea lead tech-driven surge",
+        "publish_ts": "2025-12-26 07:16:51.242000",
+        "summary": "\n        * \n      Taiwan stocks hit record high, up 3% this week\n    \n\n        * \n      S.Korean stocks hit two-week high, up 2.5% this week\n    \n\n        * \n      South Korean won eyes best week since late April\n    \n\n  \n (Updates for afternoon trade)\n    By Rajasik Mukherjee\n       Dec 26 (Reuters) - Most Asian equities were set for\ntheir strongest week in more than a month on Friday, buoyed by a\nrally in technology shares, with Taiwan's benchmark index\nhitting a record high and South Korea's "
       },
       {
-        "story_id": "urn:newsml:reuters.com:20251225:nP8N3XP05T",
-        "headline": "JAPAN'S NIKKEI AVERAGE FUTURES LITTLE CHANGED% IN EARLY TRADE",
-        "publish_ts": "2025-12-25 23:45:51.809000",
-        "summary": "JAPAN'S NIKKEI AVERAGE FUTURES LITTLE CHANGED% IN EARLY TRADE"
+        "story_id": "urn:newsml:reuters.com:20251226:nL6N3XW04X",
+        "headline": "Japan's Topix gauge touches record high on easing debt concerns",
+        "publish_ts": "2025-12-26 07:50:01.416000",
+        "summary": " (Updates to market close)\n    By Rocky Swift\n       TOKYO, Dec 26 (Reuters) - Japan's broad Topix gauge\ntouched a record high on Friday, as easing concerns about the\nnation's debt gave shares a tailwind.\n    The Topix <.TOPX> reached an all-time intraday high of\n3,436.75 in early trading before losing some momentum, closing\nup only 0.2% at 3,423.06. The blue-chip Nikkei index <.N225>\nrose 0.7% to close at 50,750.39, capping a 2.5% gain on the week\nand on course for a 26% surge in 2025.\nThe cabi"
+      },
+      {
+        "story_id": "urn:newsml:reuters.com:20251226:nL4N3XW02M",
+        "headline": "GLOBAL MARKETS-Asia stocks rise to six-week high; precious metals on a tear  ",
+        "publish_ts": "2025-12-26 08:32:22.347000",
+        "summary": "\n        * \n      Stocks stage year-end rally \n    \n\n        * \n      Gold and silver at record highs, other precious metals\nbuild on\ngains \n    \n\n        * \n      Dollar on the back foot as investors consider US rates \n    \n\n        * \n      Yen back from the brink but remains frail, intervention\nworries\nlinger\n    \n\n  \n    By Ankur Banerjee\n       SINGAPORE, Dec 26 (Reuters) - Asian stocks rose to their\nhighest in six weeks on Friday and a blistering rally in\nprecious metals showed no signs of"
+      },
+      {
+        "story_id": "urn:newsml:reuters.com:20251226:nL6N3XW0CT",
+        "headline": "GLOBAL MARKETS-Wall Street holds on to year-end highs; precious metals keep their lustre",
+        "publish_ts": "2025-12-26 16:10:42.896000",
+        "summary": "\n        * \n      Stocks rally into year-end \n    \n\n        * \n      Gold and silver hit record highs on rate cut expectations,\ngeopolitics \n    \n\n        * \n      Dollar on the back foot as investors contemplate rates \n    \n\n        * \n      Yen softens, intervention worries linger\n    \n\n  \n (reflects prices at 10.39 am ET)\n    By Isla Binnie and Ankur Banerjee\n       Dec 26 (Reuters) - Major U.S. stock indexes traded near\nrecord peaks on Friday in muted post-Christmas trading, while\nexpectatio"
+      },
+      {
+        "story_id": "urn:newsml:reuters.com:20251226:nL6N3XW0FO",
+        "headline": "GLOBAL MARKETS-Wall Street lingers around record highs; precious metals rise",
+        "publish_ts": "2025-12-26 20:35:02.689000",
+        "summary": "\n        * \n      Indexes stay at record peaks, traders look for Santa Claus\nrally\n    \n\n        * \n      Gold and silver smash records on rate cut expectations,\ngeopolitics \n    \n\n        * \n      Dollar under pressure as investors contemplate rates \n    \n\n        * \n      Yen softens on persistent intervention worries\n    \n\n  \n (Updates with afternoon prices)\n    By Isla Binnie and Ankur Banerjee\n       Dec 26 (Reuters) - Major U.S. stock indexes oscillated\naround record peaks on Friday in mut"
       }
     ]
   },
@@ -439,8 +463,8 @@
         "Open": 50405.5,
         "High": 50938.0,
         "Low": 50397.5,
-        "Close": 50600.5,
-        "Volume": 7410.0
+        "Close": 50695.5,
+        "Volume": 8079.0
       }
     },
     "ishares_msci_japan_dft": {
@@ -449,15 +473,25 @@
   },
   "calendar": {
     "source": "fmp_economic_calendar",
-    "calendar_date": "2025-12-26",
+    "calendar_date": "2025-12-27",
     "error": "http_error",
     "status_code": 402,
     "body": "Restricted Endpoint: This endpoint is not available under your current subscription please visit our subscription page to upgrade your plan at https://financialmodelingprep.com/"
   },
+  "macro_notes": {
+    "kobeissi_tweets": [
+      {
+        "source": "kobeissi_twitter",
+        "file": "2025-12-21_kobeissi.txt",
+        "date": "2025-12-21",
+        "body": "Post\n\nSee new posts\nConversation\nThe Kobeissi Letter\n@KobeissiLetter\nJapan's inflation outbreak:\n\nInflation in Japan rose +2.9% YoY in November, the 2nd-highest reading since July.\n\nCore inflation, which excludes prices of fresh food, rose +3.0% YoY.\n\nThis marks the 44th consecutive month with inflation above the Bank of Japan's target rate of 2%.\n\nAdditionally, rice inflation remains at a whopping +37.1% YoY.\n\nAs a result, the Bank of Japan signaled after raising rates on Friday that further hikes are likely.\n\nThe central bank also said that underlying inflation is still gradually increasing.\n\nThe fight against inflation in Japan is far from over.\n\n44 months of over 2%   the deflation myth is dead.\nwhat\n@whatexchange\n\u00b7\nDec 21\nYen carry trade likely unwound months ago, long before the news actually hit the headlines. At this point, it may only trigger short-term volatility when used for market manipulation; in the long run, things seem to have stabilized\n\nSee new posts\nConversation\nGuoyu RWA\n@GuoyuRwa\n\u00b7\nDec 21\njapan finally woke the inflation monster they spent 30 years trying to summon.\nRates up, yen carry unwinds, global liquidity feels it next.\nThis isn\u2019t a local story anymore \ud83d\udc40\nWilliam | Value-Investing Strategist\n@william_R2Rclub\n\u00b7\nDec 21\nJapan\u2019s inflation challenges persist. The central bank\u2019s next moves will be crucial in managing the situation.\nJohnathan Whiddon, CFP\u00ae\n@Johnathan_W15\n\u00b7\nDec 21\nJapan\u2019s inflation problem isn\u2019t temporary anymore, it\u2019s structural.\nTickerBar | Crypto & Stocks iOS/Mac app\n@tickerbar\n\u00b7\nDec 21\n\ud83d\udc40\nSteven Conners\n@conners_st87703\n\u00b7\nDec 21\nTheir deflation that they had to deal with was much more problematic.\nxNotAnAI\n@xNotAnAI\n\u00b7\nDec 21\nWarren, again, was right with his Japan investments. Learning from him, I have allocated a few single percentage points to Japan. Happy with the returns until now. Gonna ride this next phase of Japan\u2019s growth.\nVolaViking\n@VolResearch\n\u00b7\nDec 21\nMore unwinding of yen carry trade expected is that not a risk anymore?\nAI Invest\n@theAIInvest\n\u00b7\nDec 21\nSo Monday is green\n$DOG FOR LIFE\n@thankfulgod17\n\u00b7\nDec 21\nNo body gives a dick\u2026 we are cooked anyways\nvi_jjfdiassongn\n@laosijilaiye\n\u00b7\nDec 21\n@grok\n how does this impact on US stock market?\nAngela Smith\n@WalterAlle96115\n\u00b7\nDec 21\nJapan\u2019s inflation continues to rise, with core inflation hitting 3.0%. This marks the 44th consecutive month above the Bank of Japan\u2019s 2% target.\nQA Wolf\n@QAWolfHQ\nAd\n\ud83d\ude80 Speed up mobile app releases with QA Wolf! Get 80%+ test coverage in weeks, 15-min QA cycles & 100% parallel testing on iOS & Android. No flakes, 24h maintenance, 4.8 stars on G2.\nFrom qawolf.com\nPaul | US Stock Insights\n@ProfitRadarUS\n\u00b7\nDec 21\nBOJ signaling more rate hikes while inflation gradually rising suggests prolonged tightening. Anyone modeling the impact on export-driven sectors? I\u2019ve been running scenarios on this and sharing insights in my profile for those interested.\nSK\n@sk_sahil24\n\u00b7\nDec 21\nJapan\u2019s shift is significant because persistent inflation finally breaks decades of deflation psychology, but higher rates now risk pressuring growth, debt servicing, and the yen carry trade all at once.\nRei\n@Rei00zk\n\u00b7\nDec 21\nrice up 37% while boj says inflation fight far from over is the most japanese economic headline possible\nZeroMazed\n@ZeroMazed\n\u00b7\nDec 21\njapan really out here fighting inflation while we're all just watching our portfolios get rekt lol\nprasannaram\u03a9\n@_Prasanna_jo_\n\u00b7\nDec 21\nJapan finally has some inflation and everyone is acting like it is the end of the world lol just print more money and go back to sleep honestly it is not that deep\nNova Sniper\n@nova_tnv\n\u00b7\nDec 21\n2%-3% yoy inflation is really good for economic accelleration, more rate hikes is backup option only\nsyntheticlong\n@syntheticxlong\n\u00b7\nDec 21\nWhen does us stagflation start? Asking for a friend,\nITreasure\n@ITreasure_bsc\n\u00b7\nDec 21\nLife changing move in one bar\nFB | no DM | HOOD JMIA NVDA PLTR SE TSLA WRD ZETA\n@GunardiSaputra\n\u00b7\nDec 21\nWhat is the effect for the World Economic?\nAK \u3048\u30fc\u3051\u30fc\n@AK_AK_AK_10\n\u00b7\nDec 21\nJapan\u2019s inflation rate reflects raising import costs due to decreasing Yen, currency value. Unfortunately It\u2019s not related with rising of demand or wage increases."
+      }
+    ]
+  },
   "rag_top_news": [
     {
       "source": "traditional_rag",
-      "score": 0.5050085923263558,
+      "score": 0.5595206826889672,
       "story_id": "urn:newsml:reuters.com:20251226:nL6N3XW04X",
       "publish_ts": "2025-12-26 07:50:01.416000",
       "headline": "Japan's Topix gauge touches record high on easing debt concerns",
@@ -465,31 +499,15 @@
     },
     {
       "source": "traditional_rag",
-      "score": 0.48135676993356474,
+      "score": 0.5583242220523197,
       "story_id": "urn:newsml:reuters.com:20251226:nL4N3XW01Y",
       "publish_ts": "2025-12-26 02:20:01.941000",
       "headline": "Japan's Topix gauge touches record high on easing debt concerns",
-      "summary": "    By Rocky Swift\n       TOKYO, Dec 26 (Reuters) - Japan's broad Topix gauge\ntouched a record high on Friday, as easing concerns about the\nnation's debt gave shares a tailwind on one of the final trading\ndays of 2025.\n    The Topix <.TOPX> was up 0.5% in early trading, and reached\nan all-time intraday high of 3,436.75. The blue-chip Nikkei\nindex <.N225> climbed 0.9% to 50,865.30 and was set for a 26%\njump this year.\n    The cabinet on Friday approved a record budget for the next\nfiscal year, ai"
+      "summary": "Japan's Topix gauge touches record high on easing debt concerns"
     },
     {
       "source": "traditional_rag",
-      "score": 0.44292855315365076,
-      "story_id": "urn:newsml:reuters.com:20251226:nL6N3XW0CT",
-      "publish_ts": "2025-12-26 16:10:42.896000",
-      "headline": "GLOBAL MARKETS-Wall Street holds on to year-end highs; precious metals keep their lustre",
-      "summary": "\n        * \n      Stocks rally into year-end \n    \n\n        * \n      Gold and silver hit record highs on rate cut expectations,\ngeopolitics \n    \n\n        * \n      Dollar on the back foot as investors contemplate rates \n    \n\n        * \n      Yen softens, intervention worries linger\n    \n\n  \n (reflects prices at 10.39 am ET)\n    By Isla Binnie and Ankur Banerjee\n       Dec 26 (Reuters) - Major U.S. stock indexes traded near\nrecord peaks on Friday in muted post-Christmas trading, while\nexpectatio"
-    },
-    {
-      "source": "traditional_rag",
-      "score": 0.43900606131109854,
-      "story_id": "urn:newsml:reuters.com:20251226:nL4N3XW02M",
-      "publish_ts": "2025-12-26 08:32:22.347000",
-      "headline": "GLOBAL MARKETS-Asia stocks rise to six-week high; precious metals on a tear  ",
-      "summary": "\n        * \n      Stocks stage year-end rally \n    \n\n        * \n      Gold and silver at record highs, other precious metals\nbuild on\ngains \n    \n\n        * \n      Dollar on the back foot as investors consider US rates \n    \n\n        * \n      Yen back from the brink but remains frail, intervention\nworries\nlinger\n    \n\n  \n    By Ankur Banerjee\n       SINGAPORE, Dec 26 (Reuters) - Asian stocks rose to their\nhighest in six weeks on Friday and a blistering rally in\nprecious metals showed no signs of"
-    },
-    {
-      "source": "traditional_rag",
-      "score": 0.42664130557328367,
+      "score": 0.5373653852498557,
       "story_id": "urn:newsml:reuters.com:20251225:nL1N3XV023",
       "publish_ts": "2025-12-25 07:17:49.090000",
       "headline": "Japan's Nikkei ends higher as tech stocks track Wall Street's gains",
@@ -497,15 +515,15 @@
     },
     {
       "source": "traditional_rag",
-      "score": 0.377105541089698,
-      "story_id": "urn:newsml:reuters.com:20251226:nBER3GJDqG",
-      "publish_ts": "2025-12-26 03:42:14.556000",
-      "headline": "MAJOR STOCK MARKET INDICES WORLDWIDE",
-      "summary": "\nBEIJING, Dec 26 (Bernama-Xinhua) -- The following are the indices of major\nstock markets worldwide on Friday, reported Xinhua.\n\n\u00a0\n\nAsia (Friday)\n\nThe Shanghai Composite Index opened at 3,957.83 points, down 1.79 points, or\n0.05 per cent.\n\nThe Shenzhen Component Index opened at 13,539.05 points, up 7.64 points, or\n0.06 per cent.\n\nThe Hang Seng Index had no trading.\n\nThe S&P/ASX 200 index had no trading.\n\nThe 225-issue Nikkei Stock Average opened at 50,527.13 points, up 119.34\npoints, or 0.24 per"
+      "score": 0.5239336441379668,
+      "story_id": "urn:newsml:reuters.com:20251226:nL4N3XW02M",
+      "publish_ts": "2025-12-26 08:32:22.347000",
+      "headline": "GLOBAL MARKETS-Asia stocks rise to six-week high; precious metals on a tear  ",
+      "summary": "\n        * \n      Stocks stage year-end rally \n    \n\n        * \n      Gold and silver at record highs, other precious metals\nbuild on\ngains \n    \n\n        * \n      Dollar on the back foot as investors consider US rates \n    \n\n        * \n      Yen back from the brink but remains frail, intervention\nworries\nlinger\n    \n\n  \n    By Ankur Banerjee\n       SINGAPORE, Dec 26 (Reuters) - Asian stocks rose to their\nhighest in six weeks on Friday and a blistering rally in\nprecious metals showed no signs of"
     },
     {
       "source": "traditional_rag",
-      "score": 0.3754811339601997,
+      "score": 0.5030374928248743,
       "story_id": "urn:newsml:reuters.com:20251225:nL4N3XV019",
       "publish_ts": "2025-12-25 02:28:10.057000",
       "headline": "Japan's Nikkei inches up as tech stocks track Wall Street's gains ",
@@ -513,7 +531,23 @@
     },
     {
       "source": "traditional_rag",
-      "score": 0.3695440498552871,
+      "score": 0.4590261790243494,
+      "story_id": "urn:newsml:reuters.com:20251226:nBER3GJDqG",
+      "publish_ts": "2025-12-26 03:42:14.556000",
+      "headline": "MAJOR STOCK MARKET INDICES WORLDWIDE",
+      "summary": "\nBEIJING, Dec 26 (Bernama-Xinhua) -- The following are the indices of major\nstock markets worldwide on Friday, reported Xinhua.\n\n\u00a0\n\nAsia (Friday)\n\nThe Shanghai Composite Index opened at 3,957.83 points, down 1.79 points, or\n0.05 per cent.\n\nThe Shenzhen Component Index opened at 13,539.05 points, up 7.64 points, or\n0.06 per cent.\n\nThe Hang Seng Index had no trading.\n\nThe S&P/ASX 200 index had no trading.\n\nThe 225-issue Nikkei Stock Average opened at 50,527.13 points, up 119.34\npoints, or 0.24 per"
+    },
+    {
+      "source": "traditional_rag",
+      "score": 0.45312519139496676,
+      "story_id": "urn:newsml:reuters.com:20251226:nL6N3XW0CT",
+      "publish_ts": "2025-12-26 16:10:42.896000",
+      "headline": "GLOBAL MARKETS-Wall Street holds on to year-end highs; precious metals keep their lustre",
+      "summary": "\n        * \n      Stocks rally into year-end \n    \n\n        * \n      Gold and silver hit record highs on rate cut expectations,\ngeopolitics \n    \n\n        * \n      Dollar on the back foot as investors contemplate rates \n    \n\n        * \n      Yen softens, intervention worries linger\n    \n\n  \n (reflects prices at 10.39 am ET)\n    By Isla Binnie and Ankur Banerjee\n       Dec 26 (Reuters) - Major U.S. stock indexes traded near\nrecord peaks on Friday in muted post-Christmas trading, while\nexpectatio"
+    },
+    {
+      "source": "traditional_rag",
+      "score": 0.4409646464096622,
       "story_id": "urn:newsml:reuters.com:20251225:nBER93lSjz",
       "publish_ts": "2025-12-25 03:38:15.509000",
       "headline": "MAJOR STOCK MARKET INDICES WORLDWIDE",
@@ -521,42 +555,22 @@
     },
     {
       "source": "traditional_rag",
-      "score": 0.3502968867575236,
+      "score": 0.37458360145988323,
+      "story_id": "urn:newsml:reuters.com:20251226:nL4N3XU0PP",
+      "publish_ts": "2025-12-26 03:00:01.232000",
+      "headline": "ADVISORY-Japan corporate earnings week ahead",
+      "summary": "       Dec 26 (Reuters) - Please be advised that there are no corporate earnings scheduled for\nJapan (.N225) in the week ahead.\n\n (Compiled by Bengaluru Newsroom)\n ((Diaries@thomsonreuters.com))"
+    },
+    {
+      "source": "traditional_rag",
+      "score": 0.36628562284467914,
       "story_id": "urn:newsml:reuters.com:20251225:nL4N3XV078",
       "publish_ts": "2025-12-25 20:40:02.202000",
       "headline": "UPDATE 1-Asia Morning Call-Global Markets",
       "summary": "UPDATE 1-Asia Morning Call-Global Markets"
     },
     {
-      "source": "traditional_rag",
-      "score": 0.32829311421842683,
-      "story_id": "urn:newsml:reuters.com:20251225:nL4N3XV077",
-      "publish_ts": "2025-12-25 20:40:01.971000",
-      "headline": "Asia Morning Call-Global Markets",
-      "summary": "Asia Morning Call-Global Markets"
-    },
-    {
-      "score": 0.785663664,
-      "story_id": "analysis_2025-12-26T15-51-43-388495+00-00",
-      "headline": "",
-      "publish_ts": null,
-      "summary": "",
-      "type": "analysis",
-      "generated_at": "2025-12-26T15:51:43.388495+00:00",
-      "source": "pinecone"
-    },
-    {
-      "score": 0.783100128,
-      "story_id": "analysis_2025-12-26T19-28-54-415847+00-00",
-      "headline": "",
-      "publish_ts": null,
-      "summary": "",
-      "type": "analysis",
-      "generated_at": "2025-12-26T19:28:54.415847+00:00",
-      "source": "pinecone"
-    },
-    {
-      "score": 0.781633377,
+      "score": 0.787237227,
       "story_id": "analysis_2025-12-26T19-35-04-022684+00-00",
       "headline": "",
       "publish_ts": null,
@@ -566,7 +580,40 @@
       "source": "pinecone"
     },
     {
-      "score": 0.766738951,
+      "score": 0.78077513,
+      "story_id": "analysis_2025-12-26T19-28-54-415847+00-00",
+      "headline": "",
+      "publish_ts": null,
+      "summary": "",
+      "type": "analysis",
+      "generated_at": "2025-12-26T19:28:54.415847+00:00",
+      "source": "pinecone"
+    },
+    {
+      "score": 0.774925351,
+      "story_id": "analysis_2025-12-26T15-51-43-388495+00-00",
+      "headline": "",
+      "publish_ts": null,
+      "summary": "",
+      "type": "analysis",
+      "generated_at": "2025-12-26T15:51:43.388495+00:00",
+      "source": "pinecone"
+    },
+    {
+      "score": 0.766399443,
+      "story_id": "analysis_2025-12-26T19-39-46-454272+00-00",
+      "headline": "",
+      "publish_ts": null,
+      "summary": "",
+      "type": "analysis",
+      "user_status": "Rejected",
+      "user_feedback": "lets wait and see the opening on monday 29th of Dec to see what the price goes to and evaluate my short then",
+      "generated_at": "2025-12-26T19:39:46.454272+00:00",
+      "feedback_synced_at": "2025-12-27T17:24:39.445790+00:00",
+      "source": "pinecone"
+    },
+    {
+      "score": 0.765890241,
       "story_id": "analysis_2025-12-26T19-26-18-063666+00-00",
       "headline": "",
       "publish_ts": null,
@@ -576,7 +623,7 @@
       "source": "pinecone"
     },
     {
-      "score": 0.765831,
+      "score": 0.760772765,
       "story_id": "analysis_2025-12-26T17-14-41-671520+00-00",
       "headline": "",
       "publish_ts": null,
@@ -586,7 +633,7 @@
       "source": "pinecone"
     },
     {
-      "score": 0.763284683,
+      "score": 0.756961882,
       "story_id": "analysis_2025-12-26T17-21-08-753624+00-00",
       "headline": "",
       "publish_ts": null,
@@ -596,17 +643,7 @@
       "source": "pinecone"
     },
     {
-      "score": 0.745357513,
-      "story_id": "analysis_2025-12-26T17-43-27-857145+00-00",
-      "headline": "",
-      "publish_ts": null,
-      "summary": "",
-      "type": "analysis",
-      "generated_at": "2025-12-26T17:43:27.857145+00:00",
-      "source": "pinecone"
-    },
-    {
-      "score": 0.744073927,
+      "score": 0.752685666,
       "story_id": "analysis_2025-12-26T17-12-32-404235+00-00",
       "headline": "",
       "publish_ts": null,
@@ -616,154 +653,178 @@
       "source": "pinecone"
     },
     {
-      "score": 0.737184525,
-      "story_id": "analysis_2025-12-26T17-23-14-902208+00-00",
+      "score": 0.752559721,
+      "story_id": "analysis_2025-12-26T21-32-20-768815+00-00",
       "headline": "",
       "publish_ts": null,
       "summary": "",
       "type": "analysis",
-      "user_status": "Rejected",
-      "user_feedback": "i think the price is rejecting the 50850 so until this breaks i dont believe we should close the short position",
-      "generated_at": "2025-12-26T17:23:14.902208+00:00",
-      "feedback_synced_at": "2025-12-26T17:40:48.928956+00:00",
+      "user_status": "In progress",
+      "generated_at": "2025-12-26T21:32:20.768815+00:00",
+      "feedback_synced_at": "2025-12-27T17:24:38.940782+00:00",
       "source": "pinecone"
     },
     {
-      "score": 0.720436096,
-      "story_id": "analysis_2025-12-26T16-51-37-901165+00-00",
+      "score": 0.745561659,
+      "story_id": "analysis_2025-12-26T17-43-27-857145+00-00",
       "headline": "",
       "publish_ts": null,
       "summary": "",
       "type": "analysis",
-      "generated_at": "2025-12-26T16:51:37.901165+00:00",
+      "generated_at": "2025-12-26T17:43:27.857145+00:00",
       "source": "pinecone"
     }
   ],
-  "generated_at_utc": "2025-12-26T19:39:46.454272+00:00",
-  "gemini_analysis_markdown": "## Role Assignment\n\n**Role:** Senior Quant Trader, Jane Street (Asian Equity Index Arbitrage Desk).  \n**Current Date:** 2025-12-26T19:39:46.454272+00:00\n**Market Snapshot:** Japan 225 DFT latest close: 50600.5 (from current partial price bar). Intraday high: 50938.0.\n\n## Market Context (Last 48 Hours)\n\nGlobal markets are exhibiting strong year-end rallies, with US stock indexes near record highs and Asian stocks reaching six-week highs, driven by tech shares. Specifically for Japan, the Topix gauge touched a new all-time intraday high of 3,436.75 on Friday, closing up 0.2% at 3,423.06. The Nikkei 225 also saw significant gains, rising 0.7% to close at 50,750.39 on Friday, contributing to a 2.5% weekly gain and a projected 26% surge for 2025. This positive sentiment is attributed to easing concerns about Japan's national debt after the cabinet approved a record budget. Concurrently, the yen has softened, which generally supports the export-heavy Nikkei. There are no major Japanese corporate earnings scheduled for the week ahead.\n\n## Task: Daily Japan 225 Trading Analysis\n\n### 0. Review Past Feedback:\n\nPreviously, on 2025-12-26T17:23:14.902208+00:00, a recommendation to close a short position was rejected, with the reasoning: \"I think the price is rejecting the 50850 so until this breaks I don't believe we should close the short position.\"\n\nToday's situation is notably **different**. The market has moved beyond that specific rejection level. The current price data shows the Japan 225 DFT hitting an intraday high of 50938.0 today, clearly breaching the 50850 resistance level that was previously observed. While the market has pulled back slightly from this high to a current close of 50600.5 (from the partial bar data), the ability of the index to surpass 50850 indicates that the bearish thesis based on that rejection is no longer valid. The overall market sentiment, as evidenced by the news, is strongly bullish for Japanese equities, with the Topix reaching a record high and Nikkei making significant year-end gains. Holding short positions in this environment, especially after the key resistance has been breached, is increasingly risky.\n\n### 1. PnL Summary (Lead):\n\nCurrent open positions and their unrealized P&L in GBP:\n\n| Market Name     | Direction | Quantity | Entry Price | Current Price | Unrealized P&L (GBP) |\n| :-------------- | :-------- | :------- | :---------- | :------------ | :------------------- |\n| Japan 225 DFT   | Sell      | 1.42     | 48671.0     | 50600.5       | -2739.99             |\n| Japan 225 DFT   | Sell      | 1.00     | 49908.0     | 50600.5       | -692.50              |\n| Wall Street DFT | Sell      | 0.70     | 47670.3     | N/A           | N/A                  |\n| **Total Japan 225** | | | | | **-3432.49** |\n\n*Note: Wall Street DFT P&L cannot be calculated without current price data.*\n\n### 2. Top News (Last 2 Days):\n\nThe overarching theme is a global year-end rally.\n*   **Global Optimism:** Major US and Asian stock indexes are trading near or at record highs, fueled by a broad market rally into year-end. Precious metals are also showing strength.\n*   **Japan Specific Strength:** Japan's broad Topix index recorded an all-time intraday high of 3,436.75 on Friday, with the Nikkei 225 climbing to 50,750.39, marking a strong weekly gain and a significant year-to-date performance. This uplift is partly attributed to easing government debt concerns and the approval of a record budget.\n*   **Currency Dynamics:** The Yen is reported to be softening, which is generally favorable for the export-oriented Nikkei 225. Concerns about intervention linger, but the current trend is one of Yen weakness.\n*   **Economic Calendar:** No major Japanese corporate earnings are scheduled for the upcoming week.\n*   **Divergence:** There is no significant divergence; news sentiment is broadly positive and aligns with the strong upward price action observed in Japanese equities.\n\n### 3. Market Analysis:\n\nThe Japan 225 DFT is exhibiting strong upward momentum. The current latest close (from the partial bar) is 50600.5. Looking at the last 10 daily price bars, the index has generally been in an uptrend since the low of 48627.5 on 2025-12-24. Today's intraday high of 50938.0 clearly surpassed the previously identified resistance level of 50850, indicating a bullish breakout attempt. While the market has pulled back slightly from this high, the overall trend remains positive. Volume for the current partial bar (7410.0) is reasonable, supporting the intraday moves. The pattern suggests higher lows and higher highs are forming, reinforcing the bullish sentiment.\n\n### 4. Economic Calendar Impact:\n\nThe economic calendar data is unavailable (\"Restricted Endpoint\"). Therefore, no assessment can be made regarding upcoming Japanese/JPY economic events or their potential market impact.\n\n### 5. Technical Levels:\n\n*   **Immediate Resistance:** The recent high of 50938.0 (today's intraday) and the previous high of 51140.5 (two days ago) establish a strong resistance zone between 50900 and 51150. The previous 50850 resistance has been breached.\n*   **Immediate Support:** The current partial bar's low of 50397.5, which aligns closely with yesterday's close of 50405.5, forms a critical immediate support level around 50390-50400.\n*   **Next Key Support:** Further support can be found near 50157.5 (low from 2025-12-25) and 49875.5 (low from 2025-12-12).\n*   **Risk/Reward:** Given our existing short positions are significantly underwater and the market has broken above key resistance, the risk for these shorts is substantial. A potential long entry would consider a breakout above 51150 with a target of new highs, or a retest of 50400 support before moving higher. However, with shorts currently open, the primary focus is risk management.\n\n### 6. Currency Sensitivity:\n\nThe news indicates the Yen is softening, which generally has a positive correlation with the Nikkei 225 due to the index's heavy weighting towards export-oriented companies that benefit from a weaker domestic currency. The reported \"intervention worries linger\" suggest that further significant yen depreciation might prompt official action, but for now, the softer yen is supportive of Japanese equities. No specific USD/JPY levels are available to analyze carry trade dynamics, but the general direction supports the current equity rally.\n\n### 7. Risk Assessment:\n\nThe primary risk currently is the significant unrealized loss on the existing Japan 225 short positions (total 2.42 contracts). The market has shown robust bullish momentum, breaking above previously held resistance levels. There are no stop-loss orders associated with these short positions, which is a major risk management deficiency in a trending market. The global and Japanese market sentiment is overwhelmingly positive, increasing the likelihood of further upward movement. Holding these shorts without adequate risk control in a strong bull market exposes the portfolio to potentially unlimited losses. The current market volatility is moderate, but a breakout above 51150 could trigger accelerated buying.\n\n### 8. Trading Strategy:\n\nGiven the strong bullish momentum, the breach of the 50850 resistance level (as seen by today's intraday high of 50938.0), and the overall positive market sentiment for Japanese equities, the previous rationale for holding short positions is no longer valid. The existing short positions are incurring significant losses and lack adequate stop-loss protection. It is critical to prioritize risk management.\n\nTherefore, the recommendation is to **CLOSE** both existing Japan 225 DFT short positions immediately to cut losses and de-risk the portfolio. This action will bring the portfolio back to a neutral stance on Japan 225, allowing for a fresh assessment of potential long opportunities after the immediate risk is managed. Entering new long positions immediately after cutting losses is not advised without a clearer consolidation or pullback from current highs.\n\n### 9. Order Execution:\n\nTo close the existing short positions, a buy order for 2.42 contracts of Japan 225 DFT is required.\n\n```json\n[\n  {\n    \"isTrade\": false,\n    \"AutoRollover\": false,\n    \"AuditId\": \"daily_japan225_trade\",\n    \"Currency\": null,\n    \"Direction\": \"buy\",\n    \"LastChangedDateTimeUTC\": null,\n    \"MarketName\": \"Japan 225 DFT\",\n    \"BidPrice\": 50590.5,\n    \"PositionMethodId\": 1,\n    \"ExpiryDateTimeUTCDate\": null,\n    \"Status\": null,\n    \"MarketId\": 400616391,\n    \"LastChangedDateTimeUTCDate\": null,\n    \"Reference\": \"Close_Japan225_Shorts_LossCutting\",\n    \"OfferPrice\": 50610.5,\n    \"TriggerPrice\": 50610.5,\n    \"OrderId\": 0,\n    \"Quantity\": 2.42,\n    \"QuoteId\": null,\n    \"IfDone\": [],\n    \"TradingAccountId\": 400236033,\n    \"OcoOrder\": null,\n    \"Type\": null,\n    \"Applicability\": \"GTC\",\n    \"ExpiryDateTimeUTC\": null\n  }\n]\n```",
+  "generated_at_utc": "2025-12-27T18:08:01.369953+00:00",
+  "gemini_analysis_markdown": "0. **Review Past Feedback**\n- **Summary of Past Decisions**: In the previous session (2025-12-26), a proposal to short the Japan 225 was rejected. The specific feedback received was: *\"lets wait and see the opening on monday 29th of Dec to see what the price goes to and evaluate my short then.\"*\n- **Current Relevance**: Today is Saturday, December 27, 2025. The market is currently closed for the weekend. The feedback is highly directive\u2014it explicitly requests a \"wait and see\" approach until Monday's open. Therefore, my risk appetite for new entries today is zero, and my focus is purely on monitoring the existing (and currently underwater) short positions.\n\n1. **Position and PnL Snapshot**\n- **Japan 225 DFT Exposure**: \n    - Short 1.42 units @ 48,671.\n    - Short 1.00 units @ 49,908.\n    - **Total Short**: 2.42 units.\n- **Wall Street DFT Exposure**: Short 0.7 units @ 47,670.3.\n- **PnL Assessment**: With the latest Japan 225 price at approximately **50,695.5** (from the partial bar), both Nikkei short positions are significantly underwater. The index is trading roughly 780\u20132,000 points above the entry levels.\n- **Concentration**: The portfolio is exclusively positioned for a market reversal (short-biased), which is currently fighting a strong year-end \"Santa Claus\" rally.\n\n2. **Key News and Drivers (Last ~48 Hours)**\n- **Record Highs**: On Friday, December 26, the broad **Topix gauge touched an all-time record high** (3,436.75) before settling slightly lower. The Nikkei 225 rose 0.7% to close at 50,750.39, capping a 2.5% weekly gain.\n- **Easing Debt Concerns**: News reports suggest the rally was fueled by the Japanese cabinet's approval of a budget that eased some immediate concerns regarding the nation's debt trajectory.\n- **Global Momentum**: US markets continue to oscillate around record highs in thin post-Christmas trading. Gold and silver are also hitting record highs, suggesting a complex mix of \"risk-on\" equities and \"inflation-hedge\" precious metals.\n- **BoJ & Inflation**: Macro notes from Kobeissi highlight that Japan's inflation (2.9% YoY) has stayed above the 2% target for 44 consecutive months. The BoJ has signaled that further rate hikes are likely, which is structurally bearish for bonds but has yet to dampen equity enthusiasm significantly.\n\n3. **Market and Price Action**\n- **Price Level**: The Japan 225 is in a clear bullish trend, currently testing the **50,700 - 51,000** zone.\n- **Support/Resistance**:\n    - **Resistance**: 51,000 (psychological) and 51,140.5 (recent intraday high).\n    - **Support**: 50,000 (major psychological handle) and 49,540 (recent swing low).\n- **Volatility**: Liquidity is seasonally lower due to the year-end holidays, which can exacerbate moves in either direction. The partial price bar shows a high of 50,938, indicating that the market tried to break 51k but retreated slightly.\n\n4. **Macro / Calendar Considerations**\n- **Weekend Status**: It is December 27 (Saturday). No Japanese economic data is scheduled until the Monday session.\n- **Upcoming Risk**: The primary risk is the Monday (Dec 29) market open, which will react to any weekend news and the final \"window dressing\" of the 2025 calendar year.\n\n5. **Risk Assessment and Stance**\n- **Stance**: **NO TRADE / MAINTAIN EXISTING POSITION**\n- **Rationale**: \n    1. **Direct Instruction**: The human trader has explicitly instructed to wait until the Monday opening to evaluate the shorts. \n    2. **Weekend Liquidity**: Placing orders on a Saturday in a DFT market is inefficient.\n    3. **Technical Momentum**: The market is at record highs. Shorting into this momentum without a catalyst is \"picking up pennies in front of a steamroller.\" However, since we already have shorts, the focus is on the exit strategy or potential hedge on Monday, not adding risk today.\n- **Why Nothing is Optimal**: Capital preservation is paramount. The existing shorts are under pressure. Adding more risk now increases the likelihood of a margin call or exacerbated losses if the 51,000 level is breached on Monday.\n\n6. **Concrete Trade Plan (If Any)**\n- No trades are recommended for today. \n- **Plan for Monday (Dec 29)**: Monitor the open. If the index gapped above 51,200, we must consider cutting the 48,671 short to prevent catastrophic loss. If the index fails at 51,000 and begins to mean-revert towards 50,000, we hold the shorts to reduce the unrealized loss.\n\n7. **Summary Recommendation**\nToday I recommend **no new Japan 225 risk** and will maintain the current short positions without adjustment. Following previous feedback, we are waiting for the **Monday, December 29th opening** to evaluate the price action. The market is currently in a strong year-end rally with the Topix at record highs; however, the structural inflation story and BoJ's hawkish tilt provide a fundamental backdrop for our shorts if the \"Santa Rally\" momentum fades.\n\n8. **Order Execution (Machine-Readable JSON)**\n*No orders proposed for this session as per the \"wait and see\" directive.*\n\n```json\n[]\n```\n\n9. **Price Alert Suggestions**\nThese alerts will help prepare for the Monday open and manage the risk of the underwater shorts.\n\n```json\n[\n  {\n    \"clientAccountId\": 400158546,\n    \"alertId\": 0,\n    \"marketId\": 400616391,\n    \"criterion\": 4,\n    \"direction\": 1,\n    \"fillRate\": 51150.0,\n    \"emailAddress\": null,\n    \"expiry\": 1,\n    \"expiryDate\": \"2025-12-30T00:00:00Z\",\n    \"comment\": \"BREAKOUT_ABOVE_RECENT_HIGHS_STOP_LOSS_REVAL\",\n    \"notificationMethod\": 0\n  },\n  {\n    \"clientAccountId\": 400158546,\n    \"alertId\": 0,\n    \"marketId\": 400616391,\n    \"criterion\": 4,\n    \"direction\": 2,\n    \"fillRate\": 50000.0,\n    \"emailAddress\": null,\n    \"expiry\": 1,\n    \"expiryDate\": \"2025-12-30T00:00:00Z\",\n    \"comment\": \"SUPPORT_TEST_WATCH_FOR_REVERSAL\",\n    \"notificationMethod\": 0\n  }\n]\n```",
   "trading_recommendations": {
     "orders": [
       {
-        "isTrade": false,
-        "AutoRollover": false,
-        "AuditId": "daily_japan225_trade",
-        "Currency": null,
-        "Direction": "buy",
-        "LastChangedDateTimeUTC": null,
-        "MarketName": "Japan 225 DFT",
-        "BidPrice": 50590.5,
-        "PositionMethodId": 1,
-        "ExpiryDateTimeUTCDate": null,
-        "Status": null,
-        "MarketId": 400616391,
-        "LastChangedDateTimeUTCDate": null,
-        "Reference": "Close_Japan225_Shorts_LossCutting",
-        "OfferPrice": 50610.5,
-        "TriggerPrice": 50610.5,
-        "OrderId": 0,
-        "Quantity": 2.42,
-        "QuoteId": null,
-        "IfDone": [],
-        "TradingAccountId": 400236033,
-        "OcoOrder": null,
-        "Type": null,
-        "Applicability": "GTC",
-        "ExpiryDateTimeUTC": null
+        "clientAccountId": 400158546,
+        "alertId": 0,
+        "marketId": 400616391,
+        "criterion": 4,
+        "direction": 1,
+        "fillRate": 51150.0,
+        "emailAddress": null,
+        "expiry": 1,
+        "expiryDate": "2025-12-30T00:00:00Z",
+        "comment": "BREAKOUT_ABOVE_RECENT_HIGHS_STOP_LOSS_REVAL",
+        "notificationMethod": 0
+      },
+      {
+        "clientAccountId": 400158546,
+        "alertId": 0,
+        "marketId": 400616391,
+        "criterion": 4,
+        "direction": 2,
+        "fillRate": 50000.0,
+        "emailAddress": null,
+        "expiry": 1,
+        "expiryDate": "2025-12-30T00:00:00Z",
+        "comment": "SUPPORT_TEST_WATCH_FOR_REVERSAL",
+        "notificationMethod": 0
       }
     ],
     "structured": {
-      "order_execution_section": "## 9. Order Execution:\n\nTo close the existing short positions, a buy order for 2.42 contracts of Japan 225 DFT is required.\n\n```json\n[\n  {\n    \"isTrade\": false,\n    \"AutoRollover\": false,\n    \"AuditId\": \"daily_japan225_trade\",\n    \"Currency\": null,\n    \"Direction\": \"buy\",\n    \"LastChangedDateTimeUTC\": null,\n    \"MarketName\": \"Japan 225 DFT\",\n    \"BidPrice\": 50590.5,\n    \"PositionMethodId\": 1,\n    \"ExpiryDateTimeUTCDate\": null,\n    \"Status\": null,\n    \"MarketId\": 400616391,\n    \"LastChangedDateTi",
-      "orders_from_json": [
-        {
-          "isTrade": false,
-          "AutoRollover": false,
-          "AuditId": "daily_japan225_trade",
-          "Currency": null,
-          "Direction": "buy",
-          "LastChangedDateTimeUTC": null,
-          "MarketName": "Japan 225 DFT",
-          "BidPrice": 50590.5,
-          "PositionMethodId": 1,
-          "ExpiryDateTimeUTCDate": null,
-          "Status": null,
-          "MarketId": 400616391,
-          "LastChangedDateTimeUTCDate": null,
-          "Reference": "Close_Japan225_Shorts_LossCutting",
-          "OfferPrice": 50610.5,
-          "TriggerPrice": 50610.5,
-          "OrderId": 0,
-          "Quantity": 2.42,
-          "QuoteId": null,
-          "IfDone": [],
-          "TradingAccountId": 400236033,
-          "OcoOrder": null,
-          "Type": null,
-          "Applicability": "GTC",
-          "ExpiryDateTimeUTC": null
-        }
-      ],
-      "order_count": 1
+      "take_profit": 44.0
     },
-    "count": 1,
+    "count": 2,
     "execution_results": [
       {
         "order_index": 0,
         "original_order": {
-          "isTrade": false,
-          "AutoRollover": false,
-          "AuditId": "daily_japan225_trade",
-          "Currency": null,
-          "Direction": "buy",
-          "LastChangedDateTimeUTC": null,
-          "MarketName": "Japan 225 DFT",
-          "BidPrice": 50590.5,
-          "PositionMethodId": 1,
-          "ExpiryDateTimeUTCDate": null,
-          "Status": null,
-          "MarketId": 400616391,
-          "LastChangedDateTimeUTCDate": null,
-          "Reference": "Close_Japan225_Shorts_LossCutting",
-          "OfferPrice": 50610.5,
-          "TriggerPrice": 50610.5,
-          "OrderId": 0,
-          "Quantity": 2.42,
-          "QuoteId": null,
-          "IfDone": [],
-          "TradingAccountId": 400236033,
-          "OcoOrder": null,
-          "Type": null,
-          "Applicability": "GTC",
-          "ExpiryDateTimeUTC": null
+          "clientAccountId": 400158546,
+          "alertId": 0,
+          "marketId": 400616391,
+          "criterion": 4,
+          "direction": 1,
+          "fillRate": 51150.0,
+          "emailAddress": null,
+          "expiry": 1,
+          "expiryDate": "2025-12-30T00:00:00Z",
+          "comment": "BREAKOUT_ABOVE_RECENT_HIGHS_STOP_LOSS_REVAL",
+          "notificationMethod": 0
+        },
+        "status": "failed",
+        "error": "missing_direction"
+      },
+      {
+        "order_index": 1,
+        "original_order": {
+          "clientAccountId": 400158546,
+          "alertId": 0,
+          "marketId": 400616391,
+          "criterion": 4,
+          "direction": 2,
+          "fillRate": 50000.0,
+          "emailAddress": null,
+          "expiry": 1,
+          "expiryDate": "2025-12-30T00:00:00Z",
+          "comment": "SUPPORT_TEST_WATCH_FOR_REVERSAL",
+          "notificationMethod": 0
+        },
+        "status": "failed",
+        "error": "missing_direction"
+      }
+    ],
+    "dry_run": true
+  },
+  "price_alert_recommendations": {
+    "alerts": [
+      {
+        "clientAccountId": 400158546,
+        "alertId": 0,
+        "marketId": 400616391,
+        "criterion": 4,
+        "direction": 1,
+        "fillRate": 51150.0,
+        "emailAddress": null,
+        "expiry": 1,
+        "expiryDate": "2025-12-30T00:00:00Z",
+        "comment": "BREAKOUT_ABOVE_RECENT_HIGHS_STOP_LOSS_REVAL",
+        "notificationMethod": 0
+      },
+      {
+        "clientAccountId": 400158546,
+        "alertId": 0,
+        "marketId": 400616391,
+        "criterion": 4,
+        "direction": 2,
+        "fillRate": 50000.0,
+        "emailAddress": null,
+        "expiry": 1,
+        "expiryDate": "2025-12-30T00:00:00Z",
+        "comment": "SUPPORT_TEST_WATCH_FOR_REVERSAL",
+        "notificationMethod": 0
+      }
+    ],
+    "count": 2,
+    "execution_results": [
+      {
+        "alert_index": 0,
+        "request": {
+          "clientAccountId": 400158546,
+          "alertId": 0,
+          "marketId": 400616391,
+          "criterion": 4,
+          "direction": 1,
+          "fillRate": 51150.0,
+          "emailAddress": null,
+          "expiry": 1,
+          "expiryDate": "2025-12-30T00:00:00Z",
+          "comment": "BREAKOUT_ABOVE_RECENT_HIGHS_STOP_LOSS_REVAL",
+          "notificationMethod": 0
         },
         "status": "dry_run_success",
-        "api_payload": {
-          "MarketId": 400616391,
-          "Direction": "buy",
-          "Quantity": 2.42,
-          "TradingAccountId": 400236033,
-          "isTrade": false,
-          "PositionMethodId": 1,
-          "Applicability": "GTC",
-          "AutoRollover": false,
-          "OrderId": 0,
-          "IfDone": [],
-          "OcoOrder": null,
-          "TriggerPrice": 50610.5,
-          "BidPrice": 50590.5,
-          "OfferPrice": 50610.5,
-          "AuditId": "daily_japan225_trade",
-          "Reference": "Close_Japan225_Shorts_LossCutting"
+        "message": "Price alert validated but not sent (dry_run=True)"
+      },
+      {
+        "alert_index": 1,
+        "request": {
+          "clientAccountId": 400158546,
+          "alertId": 0,
+          "marketId": 400616391,
+          "criterion": 4,
+          "direction": 2,
+          "fillRate": 50000.0,
+          "emailAddress": null,
+          "expiry": 1,
+          "expiryDate": "2025-12-30T00:00:00Z",
+          "comment": "SUPPORT_TEST_WATCH_FOR_REVERSAL",
+          "notificationMethod": 0
         },
-        "message": "Order validated but not executed (dry_run=True)"
+        "status": "dry_run_success",
+        "message": "Price alert validated but not sent (dry_run=True)"
       }
     ],
     "dry_run": true
   },
   "pinecone_analysis_upload": {
-    "upserted": 1,
-    "analysis_id": "analysis_2025-12-26T19-39-46-454272+00-00"
+    "upserted": 0,
+    "error": "(400)\nReason: Bad Request\nHTTP response headers: HTTPHeaderDict({'Date': 'Sat, 27 Dec 2025 18:08:30 GMT', 'Content-Type': 'application/json', 'Content-Length': '145', 'Connection': 'keep-alive', 'x-pinecone-request-latency-ms': '91', 'x-pinecone-request-id': '7183414403214685436', 'x-envoy-upstream-service-time': '2', 'x-pinecone-response-duration-ms': '94', 'server': 'envoy'})\nHTTP response body: {\"code\":3,\"message\":\"Metadata value must be a string, number, boolean or list of strings, got 'null' for field 'primary_direction'\",\"details\":[]}\n"
   },
-  "notion_page_id": "2d5bd2e9-81a5-81f2-b411-e41fa8e592a1",
-  "notion_page_url": "https://www.notion.so/Japan-225-Analysis-2025-12-26-19-39-UTC-1-Order-s-BUY-2d5bd2e981a581f2b411e41fa8e592a1",
-  "notion_title": "Japan 225 Analysis - 2025-12-26 19:39 UTC - 1 Order(s) (BUY)"
+  "notion_page_id": "2d6bd2e9-81a5-81c2-9f52-f5a16a14ad57",
+  "notion_page_url": "https://www.notion.so/Japan-225-Analysis-2025-12-27-18-08-UTC-2-Order-s-2d6bd2e981a581c29f52f5a16a14ad57",
+  "notion_title": "Japan 225 Analysis - 2025-12-27 18:08 UTC - 2 Order(s)"
 }

@@ -1,0 +1,267 @@
+Listing Gemini models visible to this project:
+--------------------------------------------------------------------------------
+ID: models/embedding-gecko-001
+  Display name: Embedding Gecko
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-2.5-flash
+  Display name: Gemini 2.5 Flash
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-2.5-pro
+  Display name: Gemini 2.5 Pro
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-2.0-flash-exp
+  Display name: Gemini 2.0 Flash Experimental
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-2.0-flash
+  Display name: Gemini 2.0 Flash
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-2.0-flash-001
+  Display name: Gemini 2.0 Flash 001
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-2.0-flash-lite-001
+  Display name: Gemini 2.0 Flash-Lite 001
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-2.0-flash-lite
+  Display name: Gemini 2.0 Flash-Lite
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-2.0-flash-lite-preview-02-05
+  Display name: Gemini 2.0 Flash-Lite Preview 02-05
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-2.0-flash-lite-preview
+  Display name: Gemini 2.0 Flash-Lite Preview
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-exp-1206
+  Display name: Gemini Experimental 1206
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-2.5-flash-preview-tts
+  Display name: Gemini 2.5 Flash Preview TTS
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-2.5-pro-preview-tts
+  Display name: Gemini 2.5 Pro Preview TTS
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemma-3-1b-it
+  Display name: Gemma 3 1B
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemma-3-4b-it
+  Display name: Gemma 3 4B
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemma-3-12b-it
+  Display name: Gemma 3 12B
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemma-3-27b-it
+  Display name: Gemma 3 27B
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemma-3n-e4b-it
+  Display name: Gemma 3n E4B
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemma-3n-e2b-it
+  Display name: Gemma 3n E2B
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-flash-latest
+  Display name: Gemini Flash Latest
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-flash-lite-latest
+  Display name: Gemini Flash-Lite Latest
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-pro-latest
+  Display name: Gemini Pro Latest
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-2.5-flash-lite
+  Display name: Gemini 2.5 Flash-Lite
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-2.5-flash-image-preview
+  Display name: Nano Banana
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-2.5-flash-image
+  Display name: Nano Banana
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-2.5-flash-preview-09-2025
+  Display name: Gemini 2.5 Flash Preview Sep 2025
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-2.5-flash-lite-preview-09-2025
+  Display name: Gemini 2.5 Flash-Lite Preview Sep 2025
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-3-pro-preview
+  Display name: Gemini 3 Pro Preview
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-3-flash-preview
+  Display name: Gemini 3 Flash Preview
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-3-pro-image-preview
+  Display name: Nano Banana Pro
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/nano-banana-pro-preview
+  Display name: Nano Banana Pro
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-robotics-er-1.5-preview
+  Display name: Gemini Robotics-ER 1.5 Preview
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-2.5-computer-use-preview-10-2025
+  Display name: Gemini 2.5 Computer Use Preview 10-2025
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/deep-research-pro-preview-12-2025
+  Display name: Deep Research Pro Preview (Dec-12-2025)
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/embedding-001
+  Display name: Embedding 001
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/text-embedding-004
+  Display name: Text Embedding 004
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-embedding-exp-03-07
+  Display name: Gemini Embedding Experimental 03-07
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-embedding-exp
+  Display name: Gemini Embedding Experimental
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-embedding-001
+  Display name: Gemini Embedding 001
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/aqa
+  Display name: Model that performs Attributed Question Answering.
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/imagen-4.0-generate-preview-06-06
+  Display name: Imagen 4 (Preview)
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/imagen-4.0-ultra-generate-preview-06-06
+  Display name: Imagen 4 Ultra (Preview)
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/imagen-4.0-generate-001
+  Display name: Imagen 4
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/imagen-4.0-ultra-generate-001
+  Display name: Imagen 4 Ultra
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/imagen-4.0-fast-generate-001
+  Display name: Imagen 4 Fast
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/veo-2.0-generate-001
+  Display name: Veo 2
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/veo-3.0-generate-001
+  Display name: Veo 3
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/veo-3.0-fast-generate-001
+  Display name: Veo 3 fast
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/veo-3.1-generate-preview
+  Display name: Veo 3.1
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/veo-3.1-fast-generate-preview
+  Display name: Veo 3.1 fast
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-2.5-flash-native-audio-latest
+  Display name: Gemini 2.5 Flash Native Audio Latest
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-2.5-flash-native-audio-preview-09-2025
+  Display name: Gemini 2.5 Flash Native Audio Preview 09-2025
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
+ID: models/gemini-2.5-flash-native-audio-preview-12-2025
+  Display name: Gemini 2.5 Flash Native Audio Preview 12-2025
+  Supported methods: []
+  Supports generateContent: False
+--------------------------------------------------------------------------------
