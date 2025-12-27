@@ -53,6 +53,7 @@ except ImportError:
 ROOT_DIR = Path(__file__).resolve().parent
 DB_PATH = ROOT_DIR / "data" / "stonex_meta.duckdb"
 PROMPT_PATH = ROOT_DIR / "docs" / "claud.md"
+KOBEISSI_DIR = ROOT_DIR / "docs" / "kobeissi"
 
 
 @dataclass
@@ -450,16 +451,19 @@ def upsert_news_to_pinecone(
             if embedding is None:
                 continue
             
+            metadata = {
+                "story_id": item.story_id,
+                "headline": item.headline[:500],  # Pinecone metadata size limit
+                "summary": item.summary[:1000],  # Pinecone metadata size limit
+                "type": "news",
+            }
+            if item.publish_ts is not None:
+                metadata["publish_ts"] = item.publish_ts.isoformat()
+
             vectors.append({
                 "id": f"news_{item.story_id}",
                 "values": embedding,
-                "metadata": {
-                    "story_id": item.story_id,
-                    "headline": item.headline[:500],  # Pinecone metadata size limit
-                    "publish_ts": item.publish_ts.isoformat() if item.publish_ts else None,
-                    "summary": item.summary[:1000],  # Pinecone metadata size limit
-                    "type": "news",
-                }
+                "metadata": metadata,
             })
         
         if vectors:
@@ -661,6 +665,59 @@ def fetch_price_context(client: CityIndexClient, market_id: int) -> Dict[str, An
         "latest_close": latest_close,
         "partial_price_bar": data.get("PartialPriceBar"),
     }
+
+
+def load_kobeissi_tweets(lookback_days: int = 7) -> List[Dict[str, Any]]:
+    """Load recent Kobeissi tweets from text files under docs/kobeissi.
+
+    Expected usage:
+    - You manually paste selected tweets into files in ``docs/kobeissi``.
+    - File names start with an ISO date, e.g. ``2025-01-05_kobeissi.txt``.
+
+    This function reads the files, filters to the last ``lookback_days``
+    calendar days (based on the date in the file name), and returns a list of
+    dictionaries suitable to drop directly into the LLM context.
+    """
+
+    if not KOBEISSI_DIR.exists():
+        return []
+
+    today = datetime.now(tz=UTC).date()
+    cutoff = today - timedelta(days=lookback_days)
+
+    notes: List[Dict[str, Any]] = []
+
+    for path in sorted(KOBEISSI_DIR.glob("*.txt")):
+        try:
+            # Expect filenames like "2025-01-05_kobeissi.txt" or "2025-01-05.txt".
+            stem = path.stem  # "2025-01-05_kobeissi"
+            date_part = stem.split("_", 1)[0]
+            note_date = date.fromisoformat(date_part)
+        except Exception:
+            # Skip files that do not start with a valid ISO date.
+            continue
+
+        if note_date < cutoff:
+            continue
+
+        try:
+            text = path.read_text(encoding="utf-8")
+        except Exception:
+            continue
+
+        if not text.strip():
+            continue
+
+        notes.append(
+            {
+                "source": "kobeissi_twitter",
+                "file": path.name,
+                "date": note_date.isoformat(),
+                "body": text.strip(),
+            }
+        )
+
+    return notes
 
 
 def get_ishares_japan_market_id(con: duckdb.DuckDBPyConnection) -> Optional[int]:
@@ -1426,23 +1483,27 @@ def upsert_analysis_to_pinecone(
         # Calculate total position size
         total_quantity = sum(o.get("Quantity", 0) for o in orders)
         
+        # Prepare metadata (Pinecone does not allow null values)
+        metadata = {
+            "type": "analysis",
+            "generated_at": context.get("generated_at_utc"),
+            "market_id": meta.get("market_id"),
+            "latest_close": latest_close,
+            "analysis_preview": analysis_markdown[:1000],  # First 1000 chars
+            "headline_count": len(context.get("news", {}).get("latest_headlines", [])),
+            "has_positions": len(context.get("open_positions", {}).get("OpenPositions", [])) > 0,
+            "order_count": order_count,
+            "primary_direction": primary_direction,
+            "total_quantity": total_quantity,
+            "has_orders": order_count > 0,
+        }
+        metadata = {k: v for k, v in metadata.items() if v is not None}
+        
         # Prepare vector with metadata
         vector = {
             "id": analysis_id,
             "values": embedding,
-            "metadata": {
-                "type": "analysis",
-                "generated_at": context.get("generated_at_utc"),
-                "market_id": meta.get("market_id"),
-                "latest_close": latest_close,
-                "analysis_preview": analysis_markdown[:1000],  # First 1000 chars
-                "headline_count": len(context.get("news", {}).get("latest_headlines", [])),
-                "has_positions": len(context.get("open_positions", {}).get("OpenPositions", [])) > 0,
-                "order_count": order_count,
-                "primary_direction": primary_direction,
-                "total_quantity": total_quantity,
-                "has_orders": order_count > 0,
-            }
+            "metadata": metadata,
         }
         
         # Upsert to Pinecone
@@ -1702,6 +1763,9 @@ def main() -> None:
     # Economic calendar snapshot for the current UTC day
     econ_calendar = fetch_economic_calendar()
 
+    # Optional: load recent Kobeissi tweets from docs/kobeissi
+    kobeissi_notes = load_kobeissi_tweets(lookback_days=7)
+
     # Build a RAG query
     rag_query = (prompt or "").strip()
     if not rag_query:
@@ -1762,6 +1826,9 @@ def main() -> None:
             "ishares_msci_japan_dft": price_ctx_ishares,
         },
         "calendar": econ_calendar,
+        "macro_notes": {
+            "kobeissi_tweets": kobeissi_notes,
+        },
         "rag_top_news": rag_top_news,
         "generated_at_utc": datetime.now(tz=UTC).isoformat(),
     }
