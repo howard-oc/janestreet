@@ -1,4 +1,4 @@
-# **Daily Japan 225 Trading Framework )**
+# **Daily Japan 225 Trading Framework **
 
 ## **Role and Objective**
 
