@@ -20,7 +20,7 @@ on:
       execute_orders:
         description: 'Execute orders (true/false)'
         required: false
-        default: 'false'
+        default: 'true'
 
 jobs:
   analyze:
