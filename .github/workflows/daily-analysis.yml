@@ -74,7 +74,7 @@ jobs:
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
           
           # Trading execution control
-          EXECUTE_ORDERS: ${{ github.event.inputs.execute_orders || 'false' }}
+          EXECUTE_ORDERS: "true"
           EXECUTE_ALERTS: "true"
         run: |
           TIMESTAMP=$(date +%Y%m%d_%H%M)
