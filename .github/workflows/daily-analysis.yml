@@ -20,7 +20,7 @@ on:
       execute_orders:
         description: 'Execute orders (true/false)'
         required: false
-        default: 'true'
+        default: 'false'
 
 jobs:
   analyze:
@@ -74,7 +74,7 @@ jobs:
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
           
           # Trading execution control
-          EXECUTE_ORDERS: "true"
+          EXECUTE_ORDERS: "false"
           EXECUTE_ALERTS: "true"
         run: |
           TIMESTAMP=$(date +%Y%m%d_%H%M)
