@@ -705,14 +705,15 @@ def calculate_monthly_pnl(trades: List[Dict[str, Any]]) -> Dict[str, Any]:
         pnl = float(trade.get("RealisedPnL", 0.0))
         
         # Include in list of recent trades (formatted for context)
-        # Only keep trades from this month or last 5 trades regardless of date
+        # Always include trades from current month.
+        # Otherwise, fallback to a max of 20 recent trades (increased from 5).
         is_current_month = trade_date >= current_month_start
         
         if is_current_month:
             monthly_pnl += pnl
             count += 1
             
-        if is_current_month or len(recent_trades) < 5:
+        if is_current_month or len(recent_trades) < 20:
             recent_trades.append({
                 "date": date_str,
                 "direction": trade.get("Direction"),
