@@ -643,6 +643,76 @@ def fetch_active_orders(client: CityIndexClient, trading_account_id: int) -> Dic
         }
 
 
+def fetch_trade_history(client: CityIndexClient, trading_account_id: int, max_results: int = 100) -> List[Dict[str, Any]]:
+    """Fetch trade history for the trading account."""
+    headers = {"username": client.username, "session": client.session}
+    url = f"{API_BASE}/TradingAPI/order/tradehistory"
+    params = {
+        "TradingAccountId": trading_account_id,
+        "MaxResults": max_results
+    }
+
+    try:
+        resp = requests.get(url, headers=headers, params=params)
+        if not resp.ok:
+            print(f"Warning: Failed to fetch trade history: {resp.status_code} {resp.text}", file=sys.stderr)
+            return []
+        return resp.json()
+    except Exception as exc:
+        print(f"Warning: Trade history request failed: {exc}", file=sys.stderr)
+        return []
+
+
+def calculate_monthly_pnl(trades: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Calculate PnL for the current month from trade history."""
+    now = datetime.now(tz=UTC)
+    current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    monthly_pnl = 0.0
+    count = 0
+    recent_trades = []
+    
+    for trade in trades:
+        date_str = trade.get("ExecutedDateTimeUtc")
+        if not date_str:
+            continue
+            
+        try:
+            if date_str.endswith('Z'):
+                trade_date = datetime.fromisoformat(date_str[:-1]).replace(tzinfo=UTC)
+            else:
+                 trade_date = datetime.fromisoformat(date_str).replace(tzinfo=UTC)
+        except ValueError:
+            continue
+            
+        pnl = float(trade.get("RealisedPnL", 0.0))
+        
+        # Include in list of recent trades (formatted for context)
+        # Only keep trades from this month or last 5 trades regardless of date
+        is_current_month = trade_date >= current_month_start
+        
+        if is_current_month:
+            monthly_pnl += pnl
+            count += 1
+            
+        if is_current_month or len(recent_trades) < 5:
+            recent_trades.append({
+                "date": date_str,
+                "direction": trade.get("Direction"),
+                "market": trade.get("MarketName"),
+                "pnl": pnl,
+                "quantity": trade.get("Quantity"),
+                "price": trade.get("Price")
+            })
+
+    return {
+        "current_month_pnl": monthly_pnl,
+        "current_month_trade_count": count,
+        "month_name": now.strftime('%B %Y'),
+        "recent_trades": recent_trades
+    }
+
+
 def fetch_price_context(client: CityIndexClient, market_id: int) -> Dict[str, Any]:
     """Pull recent daily price bars and derive the latest close for a market."""
 
@@ -1744,6 +1814,11 @@ def main() -> None:
     news_ctx = collect_news_context(client, market_id, con, pinecone_client)
     open_positions = fetch_open_positions(client, trading_account_id)
     active_orders = fetch_active_orders(client, trading_account_id)
+    
+    # Trade History & PnL
+    trade_history = fetch_trade_history(client, trading_account_id)
+    pnl_context = calculate_monthly_pnl(trade_history)
+    
     price_ctx_japan225 = fetch_price_context(client, market_id)
 
     # Optional: price history for iShares MSCI Japan Index DFT
@@ -1821,6 +1896,7 @@ def main() -> None:
         "news": news_ctx,
         "open_positions": open_positions,
         "active_orders": active_orders,
+        "pnl_analysis": pnl_context,
         "price": {
             "japan225_dft": price_ctx_japan225,
             "ishares_msci_japan_dft": price_ctx_ishares,
