@@ -657,7 +657,17 @@ def fetch_trade_history(client: CityIndexClient, trading_account_id: int, max_re
         if not resp.ok:
             print(f"Warning: Failed to fetch trade history: {resp.status_code} {resp.text}", file=sys.stderr)
             return []
-        return resp.json()
+        
+        data = resp.json()
+        
+        # The API usually returns {"TradeHistory": [...]}
+        if isinstance(data, dict):
+            return data.get("TradeHistory", []) or data.get("Trades", []) or []
+        elif isinstance(data, list):
+            return data
+            
+        print(f"Warning: Unexpected trade history format: {type(data)}", file=sys.stderr)
+        return []
     except Exception as exc:
         print(f"Warning: Trade history request failed: {exc}", file=sys.stderr)
         return []
@@ -672,7 +682,14 @@ def calculate_monthly_pnl(trades: List[Dict[str, Any]]) -> Dict[str, Any]:
     count = 0
     recent_trades = []
     
+    if not isinstance(trades, list):
+        print(f"Warning: trades is not a list, got {type(trades)}", file=sys.stderr)
+        return {}
+    
     for trade in trades:
+        if not isinstance(trade, dict):
+            continue
+
         date_str = trade.get("ExecutedDateTimeUtc")
         if not date_str:
             continue
