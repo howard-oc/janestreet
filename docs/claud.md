@@ -17,6 +17,14 @@ Do **not assume any external data**.
 
 ## **Context Provided**
 
+* Latest **Japan 225 prices** and recent history
+* Recent **news headlines and stories** for Japan 225
+* Prior-day Japan 225 news stored in DuckDB
+* **Trade History** and **Monthly Realised PnL**
+* **Open positions** and **active orders** for the primary trading account
+* A snapshot of the **economic calendar**, filtered towards Japan/JPY items
+* **RAG results** from Pinecone and other retrievers, including:
+
 You will receive JSON including:
 
 * Japan 225 recent prices
@@ -78,7 +86,14 @@ Highlight **news vs price reaction mismatch**, if any.
 
 ### **2️⃣b. High-Impact Japan 225 Component Stocks (NEW)**
 
+* **Monthly Realised PnL**: State the current month's PnL from the context.
+* **Performance Assessment**: Briefly assess "how well we are doing" given recent decisions.
+* Describe current open positions and any obvious concentration or risk.
+* If data allows, approximate unrealised PnL in base currency; otherwise describe direction and size.
+* Call out if you are already long/short Japan 225 or related index exposure including:*
+
 Evaluate if **top-weight index movers** may skew index direction:
+
 
 **Monitor:**
 
