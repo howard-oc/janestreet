@@ -5,7 +5,7 @@
 **Objective:** Determine optimal tactical stance for today's Japan 225 session based solely on provided JSON data. **Capital preservation is paramount.**
 
 **Mandatory Risk Rules:**
-1. **Maximum Loss:** Never allow a position to incur more than 5% loss from entry
+1. **Maximum Loss:** Never allow a position to incur more than 15% loss from entry
 2. **Profit Prioritization:** Structure trades to target profit-taking or hedging opportunities
 3. **Asymmetric Risk:** Seek trades with favorable risk/reward (minimum 1:2)
 
