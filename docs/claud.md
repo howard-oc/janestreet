@@ -47,7 +47,7 @@ If `user_feedback` exists:
 
 ### **1. Position & PnL Summary**
 - Current Japan 225 exposure: size, direction, entry level
-- **Distance to 5% stop-loss level** (calculate if position exists)
+- **Distance to 15% stop-loss level** (calculate if position exists)
 - Approximate unrealized PnL (if calculable)
 - Correlated exposures (TOPIX, Asian indices, SPX/NDX)
 - **Check: Is any position near maximum loss threshold?**
